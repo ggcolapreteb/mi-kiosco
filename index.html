@@ -136,6 +136,9 @@
   .card p.larga { -webkit-mask-image: linear-gradient(#000 calc(100% - 44px), transparent); mask-image: linear-gradient(#000 calc(100% - 44px), transparent); padding-bottom: 30px; }
   .card p.sin { color: var(--muted); font-size: 15px; font-style: italic; }
   .card .pie { justify-content: space-between; margin-top: auto; padding-top: 16px; flex-wrap: nowrap; }
+  .acciones { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .btn.oir { padding: 9px 16px; font-size: 14.5px; font-weight: 700; }
+  .btn.oir[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
   .card .pos { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .card.vacia { justify-content: center; color: var(--muted); font-size: 17px; }
 
@@ -323,6 +326,58 @@ function hace(ts) {
   return new Date(ts).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
 }
 
+/* ------------------------------ lectura en voz alta ------------------------------ */
+// Usa la voz del propio navegador o teléfono: es gratis y no envía nada a ningún servicio.
+const HAY_VOZ = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+let sonando = null, turnoVoz = 0;
+function vozEnEspanol() {
+  const voces = speechSynthesis.getVoices().filter(v => /^es([-_]|$)/i.test(v.lang));
+  const orden = ['es-CL', 'es-419', 'es-MX', 'es-US', 'es-AR', 'es-ES'];
+  const puntaje = v => {
+    const i = orden.findIndex(l => v.lang.replace('_', '-').toLowerCase() === l.toLowerCase());
+    return (i < 0 ? orden.length : i) * 10 - (/natural|neural|google|online|premium|enhanced/i.test(v.name) ? 5 : 0);
+  };
+  return voces.sort((a, b) => puntaje(a) - puntaje(b))[0] || null;
+}
+function callar() {
+  turnoVoz++; sonando = null;
+  if (HAY_VOZ) speechSynthesis.cancel();
+  marcarBotonesVoz();
+}
+function escuchar(n) {
+  if (!HAY_VOZ) return;
+  if (sonando === n.link) { callar(); return; }
+  callar();
+  const turno = turnoVoz, voz = vozEnEspanol();
+  const texto = n.titulo.replace(/[.\s]*$/, '. ') + (n.ia || n.res || n.desc || '');
+  // Se lee oración por oración: algunos navegadores cortan los textos largos de una sola vez.
+  const partes = texto.match(/[^.!?…]+[.!?…]+["”»)]*|[^.!?…]+$/g) || [texto];
+  partes.forEach((parte, i) => {
+    const u = new SpeechSynthesisUtterance(parte.trim());
+    if (voz) u.voice = voz;
+    u.lang = voz ? voz.lang : 'es-CL';
+    const fin = () => { if (turno === turnoVoz && i === partes.length - 1) { sonando = null; marcarBotonesVoz(); } };
+    u.onend = fin;
+    u.onerror = () => { if (turno === turnoVoz) { sonando = null; marcarBotonesVoz(); } };
+    speechSynthesis.speak(u);
+  });
+  sonando = n.link;
+  marcarBotonesVoz();
+}
+function marcarBotonesVoz() {
+  document.querySelectorAll('button.oir').forEach(b => {
+    const activo = b.dataset.link === sonando;
+    b.textContent = activo ? 'Detener' : 'Escuchar';
+    b.setAttribute('aria-pressed', String(activo));
+  });
+}
+function botonEscuchar(n) {
+  if (!HAY_VOZ) return '';
+  const activo = sonando === n.link;
+  return el('button', { class: 'btn oir', 'data-link': n.link, 'aria-pressed': activo, onclick: () => escuchar(n) }, activo ? 'Detener' : 'Escuchar');
+}
+if (HAY_VOZ) { speechSynthesis.getVoices(); window.addEventListener('pagehide', () => speechSynthesis.cancel()); }
+
 function pintar() {
   const def = CATEGORIAS[S.cat];
   document.body.dataset.cat = S.cat;
@@ -358,6 +413,7 @@ function pintar() {
   } else {
     lista.replaceChildren(...visibles.slice(0, S.limite).map(n => {
       const abierta = S.abierta === n.link;
+      if (!abierta && sonando === n.link && S.modo === 'lista') callar();
       const titulo = el('a', { class: 'titular', href: n.link, 'aria-expanded': abierta }, n.titulo);
       // Clic normal: abre o cierra la nota aquí mismo. Ctrl/Cmd + clic o clic central: va al medio.
       titulo.addEventListener('click', e => {
@@ -380,6 +436,7 @@ function pintar() {
         n.ia ? el('p', { class: 'aviso-ia' }, 'Resumen escrito por una IA a partir de la nota original; puede tener errores.') : '',
         el('div', { class: 'pie' },
           el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer en ' + n.medio),
+          botonEscuchar(n),
           el('button', { class: 'btn', onclick: () => { S.abierta = null; pintar(); } }, 'Cerrar')));
       li.append(cuerpo);
       return li;
@@ -433,7 +490,9 @@ function pintarTarjetas(visibles) {
       el('h2', {}, n.titulo),
       texto ? el('p', {}, texto) : el('p', { class: 'sin' }, 'Este medio no publica el texto de sus notas en un feed, solo el titular.'),
       el('div', { class: 'pie' },
-        el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer en ' + n.medio),
+        el('span', { class: 'acciones' },
+          el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer en ' + n.medio),
+          botonEscuchar(n)),
         el('span', { class: 'pos' }, (i + 1) + ' de ' + notas.length))));
     return c;
   }));
@@ -445,10 +504,12 @@ function pintarTarjetas(visibles) {
 function riel() {
   const sc = $('tkscroll'), n = sc.querySelectorAll('.card[data-link]').length;
   const i = Math.round(sc.scrollTop / (sc.clientHeight || 1)) + 1;
+  const enPantalla = sc.children[i - 1];
+  if (sonando && S.modo === 'tarjetas' && enPantalla && enPantalla.dataset.link !== sonando) callar();
   $('tkriel').firstElementChild.style.height = (n ? Math.min(100, i / n * 100) : 0) + '%';
 }
 $('tkscroll').addEventListener('scroll', riel, { passive: true });
-function modo(m) { S.modo = m; guardar('modo', m); tkFirma = ''; pintar(); }
+function modo(m) { callar(); S.modo = m; guardar('modo', m); tkFirma = ''; pintar(); }
 $('aTarjetas').addEventListener('click', () => modo('tarjetas'));
 $('aLista').addEventListener('click', () => modo('lista'));
 document.addEventListener('keydown', e => {
