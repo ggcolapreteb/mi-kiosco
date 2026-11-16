@@ -130,22 +130,8 @@ def leer_feed(datos):
     return notas
 
 
-def procesar(f, ahora_ms):
-    """Trae una fuente probando sus URL en orden. Devuelve (estado, notas)."""
-    crudas, usada, errores = [], "", []
-    for url in f["urls"]:
-        try:
-            crudas = leer_feed(bajar(url))
-            usada = url
-            if crudas:
-                break
-        except Exception as e:  # noqa: BLE001 - cualquier fallo pasa a la URL siguiente
-            errores.append(f"{urlparse(url).netloc}: {type(e).__name__} {str(e)[:80]}".strip())
-    estado = {"medio": f["medio"], "cat": f["cat"], "tipo": f["tipo"]}
-    if not crudas:
-        estado.update(ok=not errores, n=0, msg=" · ".join(errores) or "feed vacío")
-        return estado, []
-
+def convertir(f, crudas, ahora_ms):
+    """Pasa las notas crudas de un feed al formato de data.json, descartando las viejas."""
     notas = []
     sufijo = re.compile(r"\s+[-–|]\s+[^-–|]{2,40}$")
     for x in crudas:
@@ -183,7 +169,28 @@ def procesar(f, ahora_ms):
             nota["buscador"] = True
         notas.append(nota)
     notas.sort(key=lambda n: -n["ts"])
-    notas = notas[:MAX_POR_FUENTE]
+    return notas[:MAX_POR_FUENTE]
+
+
+def procesar(f, ahora_ms):
+    """Trae una fuente probando sus URL en orden hasta que una entregue notas recientes."""
+    notas, usada, avisos = [], "", []
+    for url in f["urls"]:
+        sitio = urlparse(url).netloc
+        try:
+            crudas = leer_feed(bajar(url))
+        except Exception as e:  # noqa: BLE001 - cualquier fallo pasa a la URL siguiente
+            avisos.append(f"{sitio}: {type(e).__name__} {str(e)[:80]}".strip())
+            continue
+        notas = convertir(f, crudas, ahora_ms)
+        if notas:
+            usada = url
+            break
+        avisos.append(f"{sitio}: " + ("sin notas recientes" if crudas else "feed vacío"))
+    estado = {"medio": f["medio"], "cat": f["cat"], "tipo": f["tipo"]}
+    if not notas:
+        estado.update(ok=False, n=0, msg=" · ".join(avisos))
+        return estado, []
     por_buscador = bool(ES_BUSCADOR.search(usada)) and f["tipo"] == "rss"
     estado.update(ok=True, n=len(notas), msg="por buscador" if por_buscador else "")
     return estado, notas
