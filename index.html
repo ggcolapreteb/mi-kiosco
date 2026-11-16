@@ -3,107 +3,166 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mi Kiosco · medios chilenos</title>
+<title>Mi Kiosco</title>
+<meta name="color-scheme" content="light dark">
 <style>
+  @font-face { font-family: "Bricolage Grotesque"; src: url(fonts/bricolage.woff2) format("woff2");
+    font-weight: 200 800; font-stretch: 75% 100%; font-display: swap; }
+  @font-face { font-family: "Source Serif 4"; src: url(fonts/source-serif.woff2) format("woff2");
+    font-weight: 200 900; font-display: swap; }
+
+  /* Paleta: tinta azul, papel frío y los tres colores del toldo (uno por categoría). */
   :root {
-    --bg: #f6f3ec; --panel: #fffdf8; --ink: #1b1a17; --muted: #6f6a5f; --line: #ddd6c6;
-    --chip: #ebe5d6; --accent: #b3261e; --visited: #8a8474;
-    --nacional: #b3261e; --internacional: #1f5fa8; --deportes: #1f7a4a;
+    --bg: #f1f3f0; --panel: #ffffff; --ink: #14213d; --muted: #5b6478; --line: #d3d9d6; --chip: #e2e7e5;
+    --amarillo: #ffc629; --azul: #2747d8; --verde: #0f8a5f;
+    --amarillo-tinta: #7a5600; --azul-tinta: #2747d8; --verde-tinta: #0b7450;
+    --sobre-amarillo: #14213d; --sobre-azul: #ffffff; --sobre-verde: #ffffff;
+    --display: "Bricolage Grotesque", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --lectura: "Source Serif 4", Georgia, "Times New Roman", serif;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #15140f; --panel: #1d1c16; --ink: #ece7da; --muted: #a09a8a; --line: #34322a;
-      --chip: #2a2820; --visited: #7d7868;
-      --nacional: #ef6a5f; --internacional: #6aa8ee; --deportes: #58c08a;
+      --bg: #0f1730; --panel: #172143; --ink: #eef1f6; --muted: #9aa5c4; --line: #2a3663; --chip: #1e2a55;
+      --azul: #4d6bff; --verde: #18b37e;
+      --amarillo-tinta: #ffd45c; --azul-tinta: #a3b4ff; --verde-tinta: #5fdbae;
+      --sobre-verde: #04241a;
     }
   }
+  body[data-cat="nacional"] { --cat: var(--amarillo); --cat-tinta: var(--amarillo-tinta); --sobre-cat: var(--sobre-amarillo); }
+  body[data-cat="internacional"] { --cat: var(--azul); --cat-tinta: var(--azul-tinta); --sobre-cat: var(--sobre-azul); }
+  body[data-cat="deportes"] { --cat: var(--verde); --cat-tinta: var(--verde-tinta); --sobre-cat: var(--sobre-verde); }
+
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px 80px; }
-  header.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-    padding: 22px 0 10px; border-bottom: 3px double var(--ink); flex-wrap: wrap; }
-  h1 { font: 700 30px/1 Georgia, "Times New Roman", serif; margin: 0; letter-spacing: -.5px; }
-  h1 small { font: 400 13px system-ui, sans-serif; color: var(--muted); letter-spacing: 0; margin-left: 8px; }
-  .meta { font-size: 13px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.45 var(--display); font-stretch: 100%; }
   button { font: inherit; color: inherit; cursor: pointer; }
-  .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 5px 10px; font-size: 13px; }
-  .btn:hover { border-color: var(--ink); }
-  nav.tabs { display: flex; gap: 0; margin-top: 14px; border-bottom: 1px solid var(--line); }
-  nav.tabs button { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent;
-    padding: 10px 6px; font: 700 15px/1.2 Georgia, serif; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
-  nav.tabs button[aria-selected="true"] { color: var(--cat); border-bottom-color: var(--cat); }
+  :focus-visible { outline: 3px solid var(--cat-tinta); outline-offset: 2px; }
+
+  /* El toldo: la franja de tres colores que identifica al Kiosco. */
+  .toldo { height: 8px; background: linear-gradient(90deg, var(--amarillo) 0 33.33%, var(--azul) 33.33% 66.66%, var(--verde) 66.66%); }
+
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 18px 80px; }
+  header.top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 22px 0 14px; flex-wrap: wrap; }
+  h1 { font: 800 38px/0.95 var(--display); font-stretch: 78%; margin: 0; letter-spacing: -0.02em; }
+  .meta { font-size: 13.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn { border: 1.5px solid var(--ink); background: transparent; border-radius: 999px; padding: 5px 14px; font-size: 13.5px; font-weight: 600; }
+  .btn:hover { background: var(--ink); color: var(--bg); }
+  .btn.principal { background: var(--ink); color: var(--bg); }
+
+  nav.tabs { display: flex; gap: 4px; }
+  nav.tabs button { flex: 1; background: var(--chip); border: 0; border-radius: 10px 10px 0 0; padding: 10px 6px 9px;
+    font: 700 16px/1.1 var(--display); font-stretch: 88%; color: var(--muted); border-bottom: 4px solid transparent; }
+  nav.tabs button[aria-selected="true"] { background: var(--cat); color: var(--sobre-cat); }
+  .wrap > nav.tabs { border-bottom: 4px solid var(--cat); }
+
   .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; align-items: center; }
-  .row .label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); width: 100%; }
-  .chip { border: 1px solid transparent; background: var(--chip); border-radius: 999px; padding: 4px 11px; font-size: 13px; }
-  .chip b { font-weight: 400; color: var(--muted); margin-left: 4px; font-size: 12px; }
-  .chip[aria-pressed="true"] { background: var(--cat); color: #fff; }
-  .chip[aria-pressed="true"] b { color: rgba(255,255,255,.8); }
-  .chip.medio[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
-  .chip.medio[aria-pressed="true"] { background: var(--chip); color: var(--ink); border-color: var(--line); }
-  input[type=search] { flex: 1; min-width: 180px; font: inherit; font-size: 14px; padding: 7px 10px; border: 1px solid var(--line);
-    border-radius: 6px; background: var(--panel); color: var(--ink); }
-  ol.list { list-style: none; margin: 16px 0 0; padding: 0; }
-  ol.list li { padding: 13px 0; border-bottom: 1px solid var(--line); }
-  ol.list a { color: var(--ink); text-decoration: none; font: 700 19px/1.25 Georgia, "Times New Roman", serif; }
-  ol.list a:hover { text-decoration: underline; }
-  ol.list a:visited { color: var(--visited); }
-  .info { font-size: 12.5px; color: var(--muted); margin-bottom: 3px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .info .medio { font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .5px; font-size: 11.5px; }
-  .info .sub { color: var(--cat); }
-  .desc { font-size: 14px; color: var(--muted); margin: 4px 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  ol.list a.titular { cursor: pointer; }
-  ol.list li.abierta { background: var(--panel); margin: 0 -14px; padding: 16px 14px 18px; border-radius: 10px; border-bottom-color: transparent; }
-  .lectura { margin-top: 12px; }
-  .lectura img { width: 100%; max-height: 340px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; background: var(--chip); }
-  .lectura p { font-size: 16.5px; line-height: 1.55; margin: 0; }
-  .lectura p.sin { color: var(--muted); font-size: 14px; font-style: italic; }
-  .lectura .pie { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
-  .lectura .leer { font: 600 14px system-ui, sans-serif; background: var(--cat); color: #fff; text-decoration: none; border-radius: 999px; padding: 8px 16px; }
-  ol.list .lectura a.leer:visited { color: #fff; }
-  .info .ia { border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; font-size: 11px; }
-  .lectura p.aviso-ia { font-size: 12px; color: var(--muted); margin-top: 8px; }
-  .empty { padding: 40px 0; text-align: center; color: var(--muted); }
-  details.estado { margin-top: 28px; font-size: 13px; color: var(--muted); }
-  details.estado summary { cursor: pointer; }
+  .row .label { font-size: 13px; color: var(--muted); margin-right: 4px; }
+  .chip { border: 1.5px solid transparent; background: var(--chip); border-radius: 999px; padding: 4px 12px; font-size: 13.5px; font-weight: 500; }
+  .chip b { font-weight: 400; opacity: .65; margin-left: 5px; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .chip.medio { background: transparent; border-color: var(--line); }
+  .chip.medio[aria-pressed="true"] { background: transparent; color: var(--ink); border-color: var(--ink); }
+  .chip.medio[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; }
+  input[type=search] { flex: 1; min-width: 180px; font: inherit; font-size: 15px; padding: 9px 14px; border: 1.5px solid var(--line);
+    border-radius: 999px; background: var(--panel); color: var(--ink); }
+  input[type=search]:focus { border-color: var(--ink); outline: none; }
+
+  /* --- lista --- */
+  ol.list { list-style: none; margin: 18px 0 0; padding: 0; }
+  ol.list li { padding: 14px 0 15px 16px; border-left: 4px solid var(--line); margin-bottom: 10px; }
+  ol.list li:hover { border-left-color: var(--cat); }
+  ol.list a.titular { display: block; color: var(--ink); text-decoration: none; cursor: pointer;
+    font: 700 21px/1.18 var(--display); font-stretch: 88%; letter-spacing: -0.005em; }
+  ol.list a.titular:hover { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .info { font-size: 13px; color: var(--muted); margin-bottom: 5px; display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+  .info .medio { font-weight: 700; color: var(--ink); }
+  .info .sub { color: var(--cat-tinta); font-weight: 600; }
+  .info .ia { border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; font-size: 11.5px; }
+  .desc { font: 400 15.5px/1.5 var(--lectura); color: var(--muted); margin: 6px 0 0; max-width: 68ch;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  ol.list li.abierta { background: var(--panel); border-left-color: var(--cat); padding: 18px 20px 20px 18px; border-radius: 0 14px 14px 0; }
+  .lectura { margin-top: 14px; }
+  .lectura img { width: 100%; max-height: 360px; object-fit: cover; border-radius: 10px; margin-bottom: 14px; background: var(--chip); display: block; }
+  .lectura p { font: 400 18px/1.62 var(--lectura); margin: 0; max-width: 66ch; }
+  .lectura p.sin { color: var(--muted); font-size: 15px; font-style: italic; }
+  .lectura p.aviso-ia { font: 400 12.5px/1.4 var(--display); color: var(--muted); margin-top: 10px; }
+  .pie { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+  a.leer { font: 700 14.5px/1 var(--display); background: var(--cat); color: var(--sobre-cat); text-decoration: none; border-radius: 999px; padding: 11px 20px; }
+  a.leer:hover { filter: brightness(1.08); }
+  .empty { padding: 48px 0; color: var(--muted); border-left: 0 !important; font-size: 16px; }
+  details.estado { margin-top: 36px; font-size: 13px; color: var(--muted); }
+  details.estado summary { cursor: pointer; font-weight: 600; }
   details.estado table { border-collapse: collapse; margin-top: 8px; width: 100%; }
-  details.estado td { padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-  .ok { color: var(--deportes); } .fail { color: var(--nacional); }
-  .more { display: block; margin: 18px auto 0; }
-  /* --- modo tarjetas --- */
+  details.estado td { padding: 4px 10px 4px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .ok { color: var(--verde-tinta); } .fail { color: #d1344b; }
+  .more { display: block; margin: 20px auto 0; }
+
+  /* --- tarjetas --- */
   #tk { position: fixed; inset: 0; background: var(--bg); z-index: 10; display: none; }
   body.tarjetas { overflow: hidden; }
   body.tarjetas #tk { display: block; }
-  #tkbar { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 8px 14px 18px;
-    background: linear-gradient(var(--bg) 78%, transparent); }
-  #tkbar .fila { display: flex; align-items: center; gap: 10px; max-width: 640px; margin: 0 auto; }
-  #tkbar nav.tabs { flex: 1; margin-top: 0; }
-  #tkbar nav.tabs button { font-size: 13px; padding: 9px 2px; }
-  #tksubs { display: flex; gap: 6px; overflow-x: auto; max-width: 640px; margin: 8px auto 0; scrollbar-width: none; }
+  #tkbar { position: absolute; top: 0; left: 0; right: 0; z-index: 3; background: var(--bg); }
+  #tkbar .dentro { max-width: 1080px; margin: 0 auto; padding: 10px 16px 0; }
+  #tkbar .fila { display: flex; align-items: flex-end; gap: 10px; }
+  #tkbar nav.tabs { flex: 1; }
+  #tkbar nav.tabs button { font-size: 15px; padding: 9px 4px 8px; }
+  #tkbar .btn { margin-bottom: 7px; }
+  #tkbar .linea { height: 4px; background: var(--cat); }
+  #tksubs { display: flex; gap: 6px; overflow-x: auto; padding: 9px 0; scrollbar-width: none; }
   #tksubs::-webkit-scrollbar { display: none; }
   #tksubs .chip { white-space: nowrap; flex: none; }
   #tkscroll { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; }
   #tkscroll::-webkit-scrollbar { display: none; }
-  .card { height: 100vh; height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column;
-    justify-content: center; padding: 112px 22px 34px; max-width: 640px; margin: 0 auto; }
-  .card img { width: 100%; max-height: 30vh; object-fit: cover; border-radius: 12px; margin-bottom: 16px; background: var(--chip); }
-  .card h2 { font: 700 clamp(23px, 4.4vw, 33px)/1.16 Georgia, "Times New Roman", serif; margin: 6px 0 12px; letter-spacing: -.2px; }
-  .card p { font-size: 17px; line-height: 1.52; margin: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 10; -webkit-box-orient: vertical; }
-  .card p.sin { color: var(--muted); font-size: 14px; font-style: italic; }
-  .card .pie { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
-  .card .leer { background: var(--cat); color: #fff; text-decoration: none; border-radius: 999px; padding: 9px 18px; font-size: 14px; font-weight: 600; }
-  .card .pos { font-size: 12px; color: var(--muted); }
-  .card.vacia { text-align: center; color: var(--muted); }
-  @media (max-width: 520px) { h1 { font-size: 25px; } ol.list a { font-size: 17px; } }
+  /* Riel de avance: cuánto de la parrilla llevas visto. */
+  #tkriel { position: absolute; right: 0; top: 0; bottom: 0; width: 5px; background: var(--chip); z-index: 4; }
+  #tkriel i { display: block; width: 100%; background: var(--cat); height: 0; transition: height .25s ease; }
+  @media (prefers-reduced-motion: reduce) { #tkriel i { transition: none; } }
+
+  .card { height: 100vh; height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always;
+    display: flex; flex-direction: column; padding: 112px 16px 22px; max-width: 640px; margin: 0 auto; }
+  .card .foto { flex: 0 1 32%; min-height: 110px; border-radius: 14px; overflow: hidden; background: var(--cat); position: relative; }
+  .card .foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Sin foto: una placa con el nombre del medio, como la portada colgada en el kiosco. */
+  .card .foto.placa { flex-basis: 17%; display: flex; align-items: flex-end; padding: 14px 18px; }
+  .card .foto.placa span { font: 800 clamp(34px, 9vw, 64px)/0.9 var(--display); font-stretch: 76%; letter-spacing: -0.02em;
+    color: var(--sobre-cat); overflow-wrap: anywhere; }
+  .card .texto { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 16px 4px 0 14px; margin-top: 14px;
+    border-left: 5px solid var(--cat); }
+  .card .info { font-size: 13.5px; }
+  .card h2 { font: 800 clamp(25px, 6.2vw, 38px)/1.04 var(--display); font-stretch: 80%; letter-spacing: -0.015em; margin: 4px 0 12px;
+    text-wrap: balance; }
+  .card p { font: 400 17.5px/1.58 var(--lectura); margin: 0; overflow-y: auto; min-height: 0; scrollbar-width: thin; }
+  .card p.larga { -webkit-mask-image: linear-gradient(#000 calc(100% - 44px), transparent); mask-image: linear-gradient(#000 calc(100% - 44px), transparent); padding-bottom: 30px; }
+  .card p.sin { color: var(--muted); font-size: 15px; font-style: italic; }
+  .card .pie { justify-content: space-between; margin-top: auto; padding-top: 16px; flex-wrap: nowrap; }
+  .card .pos { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .card.vacia { justify-content: center; color: var(--muted); font-size: 17px; }
+
+  @media (min-width: 960px) and (min-height: 560px) {
+    .card { max-width: 1080px; flex-direction: row; align-items: stretch; gap: 34px; padding: 132px 28px 44px; }
+    .card .foto, .card .foto.placa { flex: 0 0 46%; }
+    .card .texto { margin-top: 0; padding: 4px 8px 0 26px; justify-content: center; }
+    .card .pie { margin-top: 26px; }
+    .card h2 { font-size: clamp(30px, 3vw, 44px); }
+    .card .foto.placa span { font-size: clamp(56px, 7vw, 104px); }
+    .card p { font-size: 19px; max-width: 60ch; }
+    .card.vacia { flex-direction: column; }
+  }
+  @media (max-width: 520px) {
+    #subs, #medios { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-right: -18px; padding-right: 18px; }
+    #subs::-webkit-scrollbar, #medios::-webkit-scrollbar { display: none; }
+    #subs .chip, #medios .chip, #medios .label { flex: none; white-space: nowrap; }
+  }
+  @media (max-width: 520px) { .card p { font-size: 16.5px; } h1 { font-size: 32px; } ol.list a.titular { font-size: 19px; } }
 </style>
 </head>
 <body>
+<div class="toldo"></div>
 <div class="wrap">
   <header class="top">
-    <h1>Mi Kiosco <small>medios chilenos</small></h1>
-    <div class="meta"><span id="estado">Cargando…</span><button class="btn" id="aTarjetas">Tarjetas</button><button class="btn" id="refrescar">Actualizar</button></div>
+    <h1>Mi Kiosco</h1>
+    <div class="meta"><span id="estado">Cargando…</span><button class="btn principal" id="aTarjetas">Ver en tarjetas</button><button class="btn" id="refrescar">Actualizar</button></div>
   </header>
   <nav class="tabs" id="tabs" role="tablist"></nav>
   <div class="row" id="subs"></div>
@@ -111,15 +170,20 @@
   <div class="row" id="medios"></div>
   <ol class="list" id="lista"></ol>
   <button class="btn more" id="mas" hidden>Ver más</button>
-  <details class="estado"><summary>Estado de las fuentes</summary><p id="nota-estado">Las noticias las junta un proceso automático en GitHub cada 20 minutos;; esta página solo las muestra.</p><table id="fuentes"></table></details>
+  <details class="estado"><summary>Estado de las fuentes</summary><p id="nota-estado">Las noticias las junta un proceso automático en GitHub cada 20 minutos; esta página solo las muestra.</p><table id="fuentes"></table></details>
 </div>
 
 <div id="tk">
   <div id="tkbar">
-    <div class="fila"><nav class="tabs" id="tktabs" role="tablist"></nav><button class="btn" id="aLista">Lista</button></div>
-    <div id="tksubs"></div>
+    <div class="toldo"></div>
+    <div class="dentro">
+      <div class="fila"><nav class="tabs" id="tktabs" role="tablist"></nav><button class="btn" id="aLista">Ver en lista</button></div>
+      <div class="linea"></div>
+      <div id="tksubs"></div>
+    </div>
   </div>
   <div id="tkscroll"></div>
+  <div id="tkriel" aria-hidden="true"><i></i></div>
 </div>
 
 <script>
@@ -261,7 +325,7 @@ function hace(ts) {
 
 function pintar() {
   const def = CATEGORIAS[S.cat];
-  document.body.style.setProperty('--cat', `var(--${S.cat})`);
+  document.body.dataset.cat = S.cat;
 
   const hacerTabs = () => Object.entries(CATEGORIAS).map(([k, c]) =>
     el('button', { role: 'tab', 'aria-selected': k === S.cat, onclick: () => { S.cat = k; S.sub = null; S.limite = 60; guardar('cat', k); pintar(); } }, c.nombre));
@@ -282,7 +346,7 @@ function pintar() {
   const tksubs = $('tksubs'), corrido = tksubs.scrollLeft;
   tksubs.replaceChildren(...hacerSubs()); tksubs.scrollLeft = corrido;
 
-  $('medios').replaceChildren(el('span', { class: 'label' }, 'Medios'), ...[...new Set(S.fuentes.filter(f => f.cat === S.cat || f.cat === 'auto').map(f => f.medio))].map(m =>
+  $('medios').replaceChildren(el('span', { class: 'label' }, 'Medios:'), ...[...new Set(S.fuentes.filter(f => f.cat === S.cat || f.cat === 'auto').map(f => f.medio))].map(m =>
     el('button', { class: 'chip medio', 'aria-pressed': !S.ocultos.has(m), onclick: () => {
       S.ocultos.has(m) ? S.ocultos.delete(m) : S.ocultos.add(m); guardar('ocultos', [...S.ocultos]); pintar(); } }, m)));
 
@@ -315,7 +379,7 @@ function pintar() {
         texto ? el('p', {}, texto) : el('p', { class: 'sin' }, 'Este medio no publica el texto de sus notas en un feed, solo el titular.'),
         n.ia ? el('p', { class: 'aviso-ia' }, 'Resumen escrito por una IA a partir de la nota original; puede tener errores.') : '',
         el('div', { class: 'pie' },
-          el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer completa en ' + n.medio + ' →'),
+          el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer en ' + n.medio),
           el('button', { class: 'btn', onclick: () => { S.abierta = null; pintar(); } }, 'Cerrar')));
       li.append(cuerpo);
       return li;
@@ -328,8 +392,7 @@ function pintar() {
   const fs = S.fuentes.filter(f => f.cat === S.cat || f.cat === 'auto');
   const ok = fs.filter(f => f.ok && f.n).length;
   const hora = S.generado ? new Date(S.generado).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
-  $('estado').textContent = S.error ? S.error : S.cargando && !S.generado ? 'Cargando…'
-    : hora ? `Datos de las ${hora} · ${ok}/${fs.length} fuentes` : 'Sin datos todavía';
+  $('estado').textContent = S.error ? S.error : S.cargando && !S.generado ? 'Cargando…' : hora ? 'Actualizado a las ' + hora : 'Sin datos todavía';
   $('nota-estado').textContent = `Un proceso automático en GitHub revisa los medios cada 20 minutos. Se muestran solo las noticias de las últimas ${S.horas || 2} horas (o las ${15} más recientes de la categoría si hubo pocas).`
     + (S.ia && S.ia.activa ? ` Resúmenes con IA: ${S.ia.con_ia} listos, ${S.ia.pendientes} en espera` + (S.ia.modelo ? ` (${S.ia.servicio || ''} ${S.ia.modelo})` : '') + (S.ia.error ? ` · último error: ${S.ia.error}` : '') + '.' : '');
   $('fuentes').replaceChildren(...fs.map(f => el('tr', {}, el('td', {}, f.medio),
@@ -357,23 +420,34 @@ function pintarTarjetas(visibles) {
   sc.replaceChildren(...notas.map((n, i) => {
     const texto = n.ia || n.res || n.desc;
     const c = el('article', { class: 'card', 'data-link': n.link });
+    const placa = () => el('div', { class: 'foto placa' }, el('span', {}, n.medio));
+    let foto = placa();
     if (n.img) {
       const im = el('img', { src: n.img, alt: '', loading: i < 2 ? 'eager' : 'lazy', referrerpolicy: 'no-referrer' });
-      im.addEventListener('error', () => im.remove());
-      c.append(im);
+      foto = el('div', { class: 'foto' }, im);
+      im.addEventListener('error', () => foto.replaceWith(placa()));
     }
-    c.append(
-      el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', { class: 'sub' }, n.sub), el('span', {}, hace(n.ts)), n.ia ? el('span', { class: 'ia', title: 'Resumen escrito por una IA a partir de la nota original; puede tener errores' }, 'Resumen IA') : ''),
+    c.append(foto, el('div', { class: 'texto' },
+      el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', {}, hace(n.ts)), el('span', { class: 'sub' }, n.sub),
+        n.ia ? el('span', { class: 'ia', title: 'Resumen escrito por una IA a partir de la nota original; puede tener errores' }, 'Resumen IA') : ''),
       el('h2', {}, n.titulo),
       texto ? el('p', {}, texto) : el('p', { class: 'sin' }, 'Este medio no publica el texto de sus notas en un feed, solo el titular.'),
       el('div', { class: 'pie' },
-        el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer en ' + n.medio + ' →'),
-        el('span', { class: 'pos' }, (i + 1) + ' / ' + notas.length)));
+        el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer en ' + n.medio),
+        el('span', { class: 'pos' }, (i + 1) + ' de ' + notas.length))));
     return c;
   }));
   const destino = linkActual && [...sc.children].find(c => c.dataset.link === linkActual);
   sc.scrollTop = destino ? destino.offsetTop : 0;
+  sc.querySelectorAll('.card .texto > p').forEach(p => p.classList.toggle('larga', p.scrollHeight > p.clientHeight + 4));
+  riel();
 }
+function riel() {
+  const sc = $('tkscroll'), n = sc.querySelectorAll('.card[data-link]').length;
+  const i = Math.round(sc.scrollTop / (sc.clientHeight || 1)) + 1;
+  $('tkriel').firstElementChild.style.height = (n ? Math.min(100, i / n * 100) : 0) + '%';
+}
+$('tkscroll').addEventListener('scroll', riel, { passive: true });
 function modo(m) { S.modo = m; guardar('modo', m); tkFirma = ''; pintar(); }
 $('aTarjetas').addEventListener('click', () => modo('tarjetas'));
 $('aLista').addEventListener('click', () => modo('lista'));
