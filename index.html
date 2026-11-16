@@ -158,14 +158,107 @@
     #subs .chip, #medios .chip, #medios .label { flex: none; white-space: nowrap; }
   }
   @media (max-width: 520px) { .card p { font-size: 16.5px; } h1 { font-size: 32px; } ol.list a.titular { font-size: 19px; } }
+
+  /* =====================================================================
+     Edición "diario": portada en columnas, titulares en serif y filetes,
+     con la misma paleta y los mismos controles del Kiosco.
+     ===================================================================== */
+  .wrap { max-width: 1180px; padding: 0 22px 80px; }
+  header.top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; padding: 14px 0 12px;
+    border-bottom: 1px solid var(--ink); box-shadow: 0 3px 0 var(--bg), 0 4px 0 var(--ink); margin-bottom: 4px; }
+  header.top h1 { font: 900 clamp(34px, 5vw, 54px)/1 var(--lectura); font-stretch: 100%; letter-spacing: -0.025em; text-align: center; }
+  header.top .meta.izq { flex-direction: column; align-items: flex-start; gap: 2px; font-size: 13px; }
+  header.top .meta.izq #fecha { color: var(--ink); font-weight: 700; }
+  header.top .meta.der { justify-content: flex-end; }
+
+  .wrap > nav.tabs { justify-content: center; gap: 6px; border-bottom: 1px solid var(--line); margin-top: 6px; }
+  nav.tabs button { flex: 0 1 auto; background: none; border-radius: 0; padding: 12px 18px 9px; color: var(--muted);
+    font: 600 15px/1.1 var(--display); font-stretch: 100%; border-bottom: 4px solid transparent; }
+  nav.tabs button:hover { color: var(--ink); }
+  nav.tabs button[aria-selected="true"] { background: none; color: var(--ink); font-weight: 800; border-bottom-color: var(--cat); }
+  #subs { justify-content: center; }
+  #buscar { max-width: 520px; margin: 0 auto; }
+  #medios { justify-content: center; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+
+  /* Portada: nota principal a la izquierda, cuatro titulares al lado, y el resto en tres columnas. */
+  ol.list { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 30px; margin-top: 0; }
+  ol.list li { grid-column: span 4; border-left: 0; border-top: 1px solid var(--line); margin: 0; padding: 18px 0 20px; min-width: 0; }
+  ol.list li:hover { border-left-color: transparent; }
+  ol.list .sub { font: 700 12.5px/1.2 var(--display); color: var(--cat-tinta); margin-bottom: 6px; }
+  ol.list a.titular { font: 700 21px/1.16 var(--lectura); font-stretch: 100%; letter-spacing: -0.012em; text-wrap: balance; }
+  ol.list a.titular:hover { text-decoration-thickness: 1px; }
+  ol.list .desc { font: 400 15.5px/1.48 var(--lectura); color: var(--muted); text-align: left; hyphens: manual; -webkit-hyphens: manual;
+    margin: 8px 0 0; max-width: none; -webkit-line-clamp: 3; }
+  .firma { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; margin-top: 10px; font: 400 12.5px/1.3 var(--display); color: var(--muted); }
+  .firma .medio { font-weight: 700; color: var(--ink); }
+  .firma .ia { border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; font-size: 11.5px; }
+  ol.list img.mini { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; background: var(--chip); margin-bottom: 12px; }
+
+  ol.list li.principal { grid-column: span 8; grid-row: span 4; border-top: 0; padding-right: 30px; border-right: 1px solid var(--line); }
+  ol.list li.principal a.titular { font-size: clamp(30px, 3.3vw, 44px); font-weight: 800; line-height: 1.06; letter-spacing: -0.02em; }
+  ol.list li.principal .desc { font-size: 18px; line-height: 1.5; color: var(--ink); -webkit-line-clamp: 6; max-width: 62ch; }
+  ol.list li.principal img.mini { aspect-ratio: 16 / 9; margin-bottom: 16px; }
+  ol.list li.lateral img.mini { display: none; }
+  ol.list li.principal + li.lateral { border-top: 0; }
+  ol.list li.lateral a.titular { font-size: 19px; }
+  ol.list li.lateral .desc { -webkit-line-clamp: 2; }
+
+  /* Nota abierta: ocupa todo el ancho, como una página interior. */
+  ol.list li.abierta { scroll-margin-top: 12px; grid-column: 1 / -1; grid-row: auto; background: none; border-radius: 0; border-right: 0;
+    border-top: 3px solid var(--cat); padding: 22px 0 28px; }
+  ol.list li.abierta .nota { max-width: 760px; margin: 0 auto; }
+  ol.list li.abierta a.titular { font-size: clamp(28px, 3.2vw, 40px); font-weight: 800; line-height: 1.08; letter-spacing: -0.02em; }
+  ol.list li.abierta img.mini { display: block !important; aspect-ratio: 16 / 9; margin: 0 0 16px; }
+  .lectura { margin-top: 18px; }
+  .lectura p { font-size: 19px; line-height: 1.6; max-width: none; }
+  ol.list li.empty { grid-column: 1 / -1; border: 0; text-align: center; }
+
+  /* Tarjetas: mismo armado, titulares en serif. */
+  .card h2 { font: 800 clamp(25px, 6vw, 36px)/1.08 var(--lectura); font-stretch: 100%; letter-spacing: -0.02em; }
+  .card .foto { border-radius: 4px; }
+  .card .foto.placa span { font-family: var(--lectura); font-weight: 900; font-stretch: 100%; letter-spacing: -0.03em; font-size: clamp(30px, 8vw, 56px); }
+  #tkbar nav.tabs button { padding: 11px 10px 8px; }
+  #tkbar .linea { height: 1px; background: var(--line); }
+
+  @media (min-width: 960px) and (min-height: 560px) {
+    .card h2 { font-size: clamp(30px, 3vw, 44px); }
+    .card .foto.placa span { font-size: clamp(48px, 6vw, 92px); }
+  }
+  @media (max-width: 900px) {
+    ol.list li, ol.list li.principal { grid-column: 1 / -1; grid-row: auto; padding-right: 0; border-right: 0; }
+    ol.list li.principal + li.lateral { border-top: 1px solid var(--line); }
+    /* En pantallas angostas las notas secundarias llevan la foto chica al costado. */
+    ol.list li:not(.principal):not(.abierta) { display: flex; flex-direction: row-reverse; gap: 14px; align-items: flex-start; }
+    ol.list li:not(.principal):not(.abierta) .nota { flex: 1; min-width: 0; }
+    ol.list li:not(.principal):not(.abierta) img.mini { display: block; flex: 0 0 96px; width: 96px; aspect-ratio: 1; margin: 2px 0 0; }
+    ol.list li:not(.principal):not(.abierta) a.titular { font-size: 18.5px; }
+  }
+  @media (max-width: 620px) {
+    .wrap { padding: 0 16px 70px; }
+    header.top { grid-template-columns: 1fr; text-align: center; gap: 8px; }
+    header.top h1 { order: -1; }
+    header.top .meta.izq { align-items: center; }
+    header.top .meta.der { justify-content: center; }
+    nav.tabs button { padding: 11px 10px 8px; }
+    #subs, #medios { justify-content: flex-start; }
+    ol.list li.principal a.titular { font-size: 28px; }
+    ol.list li.principal .desc { font-size: 16.5px; }
+  }
+  .btn { white-space: nowrap; }
+  @media (max-width: 520px) {
+    #tkbar nav.tabs { gap: 0; }
+    #tkbar nav.tabs button { font-size: 14px; padding: 11px 7px 8px; }
+    #tkbar .btn { padding: 5px 11px; font-size: 13px; }
+  }
 </style>
 </head>
 <body>
 <div class="toldo"></div>
 <div class="wrap">
   <header class="top">
+    <div class="meta izq"><span id="fecha"></span><span id="estado">Cargando…</span></div>
     <h1>Mi Kiosco</h1>
-    <div class="meta"><span id="estado">Cargando…</span><button class="btn principal" id="aTarjetas">Ver en tarjetas</button><button class="btn" id="refrescar">Actualizar</button></div>
+    <div class="meta der"><button class="btn principal" id="aTarjetas">Ver en tarjetas</button><button class="btn" id="refrescar">Actualizar</button></div>
   </header>
   <nav class="tabs" id="tabs" role="tablist"></nav>
   <div class="row" id="subs"></div>
@@ -411,7 +504,11 @@ function pintar() {
     lista.replaceChildren(el('li', { class: 'empty' }, S.cargando ? 'Cargando titulares…'
       : (S.notas[S.cat] || []).length ? 'No hay titulares con ese filtro.' : 'Todavía no hay noticias cargadas. Abajo está el detalle por fuente.'));
   } else {
-    lista.replaceChildren(...visibles.slice(0, S.limite).map(n => {
+    const enLista = visibles.slice(0, S.limite);
+    const iAbierta = enLista.findIndex(n => n.link === S.abierta);
+    if (iAbierta > 0) enLista.unshift(enLista.splice(iAbierta, 1)[0]);   // la nota abierta va arriba, a todo el ancho
+    let lugar = 0;
+    lista.replaceChildren(...enLista.map(n => {
       const abierta = S.abierta === n.link;
       if (!abierta && sonando === n.link && S.modo === 'lista') callar();
       const titulo = el('a', { class: 'titular', href: n.link, 'aria-expanded': abierta }, n.titulo);
@@ -419,26 +516,33 @@ function pintar() {
       titulo.addEventListener('click', e => {
         if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
         e.preventDefault(); S.abierta = abierta ? null : n.link; pintar();
+        if (S.abierta) { const a = document.querySelector('#lista li.abierta'); if (a) a.scrollIntoView({ block: 'start' }); }
       });
-      const li = el('li', { class: abierta ? 'abierta' : '' },
-        el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', { class: 'sub' }, n.sub), el('span', {}, hace(n.ts))),
-        titulo);
-      if (!abierta) { if (n.desc) li.append(el('p', { class: 'desc' }, n.desc)); return li; }
       const texto = n.ia || n.res || n.desc;
-      const cuerpo = el('div', { class: 'lectura' });
-      if (n.img) {
-        const im = el('img', { src: n.img, alt: '', referrerpolicy: 'no-referrer' });
+      const foto = () => {
+        if (!n.img) return '';
+        const im = el('img', { class: 'mini', src: n.img, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
         im.addEventListener('error', () => im.remove());
-        cuerpo.append(im);
+        return im;
+      };
+      const firma = el('div', { class: 'firma' }, el('span', { class: 'medio' }, n.medio), el('span', {}, hace(n.ts)),
+        n.ia ? el('span', { class: 'ia', title: 'Resumen escrito por una IA a partir de la nota original; puede tener errores' }, 'Resumen IA') : '');
+      const puesto = abierta ? 'abierta' : lugar === 0 ? 'principal' : lugar <= 4 ? 'lateral' : '';
+      if (!abierta) lugar++;
+      const li = el('li', { class: puesto });
+      if (!abierta) {
+        li.append(foto(), el('div', { class: 'nota' }, el('div', { class: 'sub' }, n.sub), titulo, texto ? el('p', { class: 'desc' }, texto) : '', firma));
+        return li;
       }
-      cuerpo.append(
+      const cuerpo = el('div', { class: 'lectura' });
+      cuerpo.append(foto(),
         texto ? el('p', {}, texto) : el('p', { class: 'sin' }, 'Este medio no publica el texto de sus notas en un feed, solo el titular.'),
         n.ia ? el('p', { class: 'aviso-ia' }, 'Resumen escrito por una IA a partir de la nota original; puede tener errores.') : '',
         el('div', { class: 'pie' },
           el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer en ' + n.medio),
           botonEscuchar(n),
           el('button', { class: 'btn', onclick: () => { S.abierta = null; pintar(); } }, 'Cerrar')));
-      li.append(cuerpo);
+      li.append(el('div', { class: 'nota' }, el('div', { class: 'sub' }, n.sub), titulo, firma, cuerpo));
       return li;
     }));
   }
@@ -449,6 +553,8 @@ function pintar() {
   const fs = S.fuentes.filter(f => f.cat === S.cat || f.cat === 'auto');
   const ok = fs.filter(f => f.ok && f.n).length;
   const hora = S.generado ? new Date(S.generado).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
+  const hoy = new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('fecha').textContent = hoy.charAt(0).toUpperCase() + hoy.slice(1);
   $('estado').textContent = S.error ? S.error : S.cargando && !S.generado ? 'Cargando…' : hora ? 'Actualizado a las ' + hora : 'Sin datos todavía';
   $('nota-estado').textContent = `Un proceso automático en GitHub revisa los medios cada 20 minutos. Se muestran solo las noticias de las últimas ${S.horas || 2} horas (o las ${15} más recientes de la categoría si hubo pocas).`
     + (S.ia && S.ia.activa ? ` Resúmenes con IA: ${S.ia.con_ia} listos, ${S.ia.pendientes} en espera` + (S.ia.modelo ? ` (${S.ia.servicio || ''} ${S.ia.modelo})` : '') + (S.ia.error ? ` · último error: ${S.ia.error}` : '') + '.' : '');
