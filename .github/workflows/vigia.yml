@@ -1,0 +1,28 @@
+name: Vigía
+
+# Respaldo: una vez por hora revisa que "Actualizar noticias" esté corriendo
+# y lo vuelve a encender si la cadena se cortó.
+
+on:
+  schedule:
+    - cron: "13 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  vigia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Encender si está detenido
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ACTIVAS=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/actualizar.yml/runs?per_page=10" \
+            --jq '[.workflow_runs[] | select(.status != "completed")] | length')
+          echo "Ejecuciones activas: $ACTIVAS"
+          if [ "$ACTIVAS" = "0" ]; then
+            gh workflow run actualizar.yml --repo "$GITHUB_REPOSITORY" --ref main
+          fi

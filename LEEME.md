@@ -24,6 +24,6 @@ noticias en `data.json`. La página (`index.html`) solo muestra ese archivo.
 
 - **Medios:** edita `fuentes.json` (cada línea es una fuente; `urls` se prueban en orden).
 - **Subcategorías y palabras clave:** bloque CONFIGURACIÓN al inicio del script de `index.html`.
-- **Frecuencia:** la línea `cron` de `.github/workflows/actualizar.yml`.
+- **Frecuencia:** el `sleep 1200` (segundos) de `.github/workflows/actualizar.yml`.
 - **Qué falló:** en la página, vista Lista → "Estado de las fuentes"; o en GitHub,
   pestaña "Actions" → la última ejecución → paso "Leer los feeds".

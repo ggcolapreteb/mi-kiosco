@@ -1,12 +1,16 @@
 name: Actualizar noticias
 
+# Este proceso se mantiene solo: cada ejecución actualiza las noticias cada 20 minutos
+# durante unas 5 horas y, al terminar, deja encendida la siguiente (el "relevo").
+# No depende del horario programado de GitHub, que resultó poco confiable.
+# Si la cadena se corta, vigia.yml la vuelve a encender.
+
 on:
-  schedule:
-    - cron: "7,27,47 * * * *"   # cada 20 minutos (GitHub puede atrasarse algunos minutos)
-  workflow_dispatch:             # permite ejecutarlo a mano desde la pestaña Actions
+  workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: actualizar
@@ -15,18 +19,30 @@ concurrency:
 jobs:
   actualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 345
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Leer los feeds
-        run: python actualizar.py
-      - name: Guardar data.json
+      - name: Actualizar cada 20 minutos
         run: |
           git config user.name "kiosco-bot"
           git config user.email "kiosco-bot@users.noreply.github.com"
-          git add data.json
-          git diff --cached --quiet || git commit -m "Actualiza noticias"
-          git push
+          FIN=$(( $(date +%s) + 5 * 3600 ))
+          while true; do
+            git pull -q --rebase origin main || true
+            python actualizar.py || true
+            git add data.json
+            if ! git diff --cached --quiet; then
+              git commit -q -m "Actualiza noticias"
+              git push -q origin HEAD:main || { git pull -q --rebase origin main && git push -q origin HEAD:main; } || true
+            fi
+            if [ "$(date +%s)" -ge "$FIN" ]; then break; fi
+            sleep 1200
+          done
+      - name: Relevo
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run actualizar.yml --repo "$GITHUB_REPOSITORY" --ref main
