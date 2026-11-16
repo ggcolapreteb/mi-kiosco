@@ -1,0 +1,28 @@
+name: Probar IA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  models: read
+
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Catálogo y pedido de prueba
+        env:
+          IA_TOKEN: ${{ github.token }}
+        run: |
+          echo "== catálogo"
+          curl -sS -o cat.json -w "HTTP %{http_code} %{content_type} %{size_download}\n" -H "Authorization: Bearer $IA_TOKEN" -H "Accept: application/vnd.github+json" https://models.github.ai/catalog/models
+          python3 -c "import json;d=json.load(open('cat.json'));print(len(d));[print(m.get('id'),m.get('rate_limit_tier'),m.get('limits')) for m in d if 'mini' in m.get('id','') or m.get('rate_limit_tier')=='low']" || head -c 600 cat.json
+          for M in openai/gpt-4.1-mini openai/gpt-4o-mini; do
+            echo "== chat $M"
+            curl -sS -D cab.txt -o resp.txt -w "HTTP %{http_code} %{content_type} %{size_download}\n" -H "Authorization: Bearer $IA_TOKEN" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" \
+              https://models.github.ai/inference/chat/completions \
+              -d "{\"model\":\"$M\",\"max_tokens\":60,\"response_format\":{\"type\":\"json_object\"},\"messages\":[{\"role\":\"system\",\"content\":\"Responde solo JSON\"},{\"role\":\"user\",\"content\":\"Devuelve {\\\"ok\\\": true}\"}]}"
+            grep -i "ratelimit\|retry\|content-encoding" cab.txt || true
+            head -c 700 resp.txt; echo
+          done
