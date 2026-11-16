@@ -15,14 +15,15 @@ jobs:
         env:
           IA_TOKEN: ${{ github.token }}
         run: |
-          echo "== catálogo"
-          curl -sS -o cat.json -w "HTTP %{http_code} %{content_type} %{size_download}\n" -H "Authorization: Bearer $IA_TOKEN" -H "Accept: application/vnd.github+json" https://models.github.ai/catalog/models
-          python3 -c "import json;d=json.load(open('cat.json'));print(len(d));[print(m.get('id'),m.get('rate_limit_tier'),m.get('limits')) for m in d if 'mini' in m.get('id','') or m.get('rate_limit_tier')=='low']" || head -c 600 cat.json
-          for M in openai/gpt-4.1-mini openai/gpt-4o-mini; do
-            echo "== chat $M"
-            curl -sS -D cab.txt -o resp.txt -w "HTTP %{http_code} %{content_type} %{size_download}\n" -H "Authorization: Bearer $IA_TOKEN" -H "Accept: application/vnd.github+json" -H "Content-Type: application/json" \
-              https://models.github.ai/inference/chat/completions \
-              -d "{\"model\":\"$M\",\"max_tokens\":60,\"response_format\":{\"type\":\"json_object\"},\"messages\":[{\"role\":\"system\",\"content\":\"Responde solo JSON\"},{\"role\":\"user\",\"content\":\"Devuelve {\\\"ok\\\": true}\"}]}"
-            grep -i "ratelimit\|retry\|content-encoding" cab.txt || true
-            head -c 700 resp.txt; echo
-          done
+          B='{"max_tokens":60,"messages":[{"role":"user","content":"Di hola en una palabra"}],"model":"MODELO"}'
+          probar() { # url modelo
+            echo "== $1 [$2]"
+            curl -sS -L -D cab.txt -o resp.txt -w "HTTP %{http_code} %{content_type} %{size_download} final=%{url_effective}\n" -H "Authorization: Bearer $IA_TOKEN" -H "Accept: application/json" -H "Content-Type: application/json" "$1" -d "${B/MODELO/$2}" || true
+            grep -i "^HTTP\|ratelimit\|location\|server:\|x-github" cab.txt || true
+            head -c 500 resp.txt; echo
+          }
+          probar https://models.github.ai/inference/chat/completions openai/gpt-4o-mini
+          probar https://models.inference.ai.azure.com/chat/completions gpt-4o-mini
+          probar https://models.inference.ai.azure.com/chat/completions gpt-4.1-mini
+          echo "== catálogo azure"; curl -sS -w "HTTP %{http_code}\n" -H "Authorization: Bearer $IA_TOKEN" https://models.inference.ai.azure.com/models -o m.json || true; head -c 400 m.json; echo
+          echo "== resolución"; getent hosts models.github.ai || true; curl -sS -o /dev/null -w "%{remote_ip}\n" https://models.github.ai/ || true
