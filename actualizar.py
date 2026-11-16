@@ -338,23 +338,29 @@ def resumir_con_ia(notas, carpeta):
                 f"### id {k + 1}\nTitular: {n['titulo']}\nMedio: {n['medio']}\nTexto: {n['_texto'][:IA_LARGO_TEXTO]}"
                 for k, n in enumerate(grupo))
             respuesta = None
-            for modelo in list(modelos):
-                try:
-                    respuesta = pedir_ia(IA_RUTA_CHAT, {
-                        "model": modelo, "temperature": 0.2, "max_tokens": 4000,
-                        "response_format": {"type": "json_object"},
-                        "messages": [{"role": "system", "content": IA_INSTRUCCIONES},
-                                     {"role": "user", "content": entrada}],
-                    })
-                    estado["modelo"] = modelo
+            fallas = []
+            for ronda in range(3):               # si el servicio está saturado, se espera y se reintenta
+                for modelo in list(modelos):
+                    try:
+                        respuesta = pedir_ia(IA_RUTA_CHAT, {
+                            "model": modelo, "temperature": 0.2, "max_tokens": 4000,
+                            "response_format": {"type": "json_object"},
+                            "messages": [{"role": "system", "content": IA_INSTRUCCIONES},
+                                         {"role": "user", "content": entrada}],
+                        })
+                        estado["modelo"] = modelo
+                        break
+                    except urllib.error.HTTPError as e:
+                        fallas.append(f"{modelo}: HTTP {e.code}")
+                        if e.code not in (500, 502, 503, 504):
+                            modelos.remove(modelo)    # sin cupo (429) o no disponible: no insistir con él
+                    except Exception as e:  # noqa: BLE001
+                        fallas.append(f"{modelo}: {type(e).__name__} {str(e)[:60]}")
+                if respuesta or not modelos:
                     break
-                except urllib.error.HTTPError as e:
-                    detalle = e.read().decode("utf-8", "replace")[:200]
-                    estado["error"] = f"{modelo}: HTTP {e.code} {detalle}"
-                    modelos.remove(modelo)    # sin cupo o no disponible: probar el siguiente
-                except Exception as e:  # noqa: BLE001
-                    estado["error"] = f"{modelo}: {type(e).__name__} {str(e)[:120]}"
-                    break
+                time.sleep(30)
+            if fallas:
+                estado["error"] = " · ".join(fallas[-6:])
             if not respuesta:
                 break
             try:
@@ -366,7 +372,6 @@ def resumir_con_ia(notas, carpeta):
                     if 0 <= k < len(grupo) and len(resumen) > 120:
                         hechos[grupo[k]["link"]] = {"r": resumen, "ts": grupo[k]["ts"], "m": estado["modelo"]}
                         estado["nuevos"] += 1
-                estado["error"] = ""
             except Exception as e:  # noqa: BLE001
                 estado["error"] = f"respuesta ilegible: {type(e).__name__} {str(e)[:120]}"
                 break
