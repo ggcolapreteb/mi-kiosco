@@ -331,7 +331,7 @@ function pintar() {
   $('estado').textContent = S.error ? S.error : S.cargando && !S.generado ? 'Cargando…'
     : hora ? `Datos de las ${hora} · ${ok}/${fs.length} fuentes` : 'Sin datos todavía';
   $('nota-estado').textContent = 'Las noticias las junta un proceso automático en GitHub cada 20 minutos; esta página solo las muestra.'
-    + (S.ia && S.ia.activa ? ` Resúmenes con IA: ${S.ia.con_ia} listos, ${S.ia.pendientes} en espera` + (S.ia.modelo ? ` (${S.ia.modelo})` : '') + (S.ia.error ? ` · último error: ${S.ia.error}` : '') + '.' : '');
+    + (S.ia && S.ia.activa ? ` Resúmenes con IA: ${S.ia.con_ia} listos, ${S.ia.pendientes} en espera` + (S.ia.modelo ? ` (${S.ia.servicio || ''} ${S.ia.modelo})` : '') + (S.ia.error ? ` · último error: ${S.ia.error}` : '') + '.' : '');
   $('fuentes').replaceChildren(...fs.map(f => el('tr', {}, el('td', {}, f.medio),
     el('td', {}, f.tipo === 'google' ? 'Buscador de noticias' : f.tipo === 'mixto' ? 'RSS general' : 'RSS propio'),
     el('td', { class: f.ok && f.n ? 'ok' : 'fail' }, f.ok ? `${f.n} ${f.n === 1 ? 'nota' : 'notas'}${f.msg ? ' (' + f.msg + ')' : ''}` : 'falló: ' + f.msg))));

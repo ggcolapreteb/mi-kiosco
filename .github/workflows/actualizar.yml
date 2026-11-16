@@ -29,6 +29,7 @@ jobs:
       - name: Actualizar cada 20 minutos
         env:
           IA_TOKEN: ${{ github.token }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           git config user.name "kiosco-bot"
           git config user.email "kiosco-bot@users.noreply.github.com"

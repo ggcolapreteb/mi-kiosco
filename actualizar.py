@@ -219,11 +219,21 @@ def procesar(f, ahora_ms):
 
 
 # ----------------------------------------------------------------------------
-# Resúmenes con IA (GitHub Models, gratis con la cuenta de GitHub)
+# Resúmenes con IA. Si existe el secreto GEMINI_API_KEY se usa Gemini (Google);
+# si no, GitHub Models con la cuenta de GitHub.
 # ----------------------------------------------------------------------------
-IA_URL = os.environ.get("IA_URL", "https://models.github.ai")
-IA_TOKEN = os.environ.get("IA_TOKEN", "")
-IA_PEDIDOS_POR_CICLO = 2     # el plan gratis permite ~150 pedidos al día; 72 ciclos x 2 = 144
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+USA_GEMINI = bool(GEMINI_KEY)
+if USA_GEMINI:
+    IA_URL = os.environ.get("IA_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
+    IA_TOKEN = GEMINI_KEY
+    IA_RUTA_CHAT, IA_RUTA_MODELOS = "/chat/completions", "/models"
+    IA_PEDIDOS_POR_CICLO = 6     # Flash-Lite gratis: ~500 pedidos al día; 72 ciclos x 6 = 432
+else:
+    IA_URL = os.environ.get("IA_URL", "https://models.github.ai")
+    IA_TOKEN = os.environ.get("IA_TOKEN", "")
+    IA_RUTA_CHAT, IA_RUTA_MODELOS = "/inference/chat/completions", "/catalog/models"
+    IA_PEDIDOS_POR_CICLO = 2     # el plan gratis permite ~150 pedidos al día; 72 ciclos x 2 = 144
 IA_NOTAS_POR_PEDIDO = 6
 IA_LARGO_TEXTO = 3000        # caracteres de cada nota que se le pasan a la IA
 IA_TEXTO_MINIMO = 400        # con menos texto que esto no hay nada que resumir
@@ -254,14 +264,23 @@ def pedir_ia(ruta, cuerpo=None):
 
 
 def elegir_modelos():
-    """Modelos del nivel gratuito más holgado ("low"), con los preferidos primero."""
+    """Modelos a probar, en orden, según el servicio que se esté usando."""
     try:
-        catalogo = pedir_ia("/catalog/models")
-        bajos = [m["id"] for m in catalogo if m.get("rate_limit_tier") == "low"
-                 and "text" in (m.get("supported_output_modalities") or ["text"])]
+        catalogo = pedir_ia(IA_RUTA_MODELOS)
     except Exception as e:  # noqa: BLE001
-        print("IA: no se pudo leer el catálogo:", type(e).__name__, str(e)[:100])
-        return IA_MODELOS
+        print("IA: no se pudo leer la lista de modelos:", type(e).__name__, str(e)[:100])
+        return ["gemini-2.5-flash-lite"] if USA_GEMINI else IA_MODELOS
+    if USA_GEMINI:
+        # Se prefiere el Flash-Lite más nuevo (el de mayor cupo gratis), luego los Flash.
+        ids = [m["id"].split("/")[-1] for m in catalogo.get("data", [])]
+        ids = [i for i in ids if i.startswith("gemini-") and "flash" in i
+               and not re.search(r"image|tts|live|audio|embed|preview|exp|native|omni", i)]
+        version = lambda i: [int(x) for x in re.findall(r"\d+", i)[:2]]  # noqa: E731
+        lite = sorted([i for i in ids if "lite" in i], key=version, reverse=True)
+        resto = sorted([i for i in ids if "lite" not in i], key=version, reverse=True)
+        return (lite + resto)[:4] or ["gemini-2.5-flash-lite"]
+    bajos = [m["id"] for m in catalogo if m.get("rate_limit_tier") == "low"
+             and "text" in (m.get("supported_output_modalities") or ["text"])]
     preferidos = [m for m in IA_MODELOS if m in bajos]
     otros = [m for m in bajos if "mini" in m and m.startswith("openai/") and m not in preferidos]
     return preferidos + otros or IA_MODELOS
@@ -287,7 +306,7 @@ def resumir_con_ia(notas, carpeta):
             hechos = json.load(fh)
     except Exception:  # noqa: BLE001
         hechos = {}
-    estado = {"activa": bool(IA_TOKEN), "modelo": "", "nuevos": 0, "error": ""}
+    estado = {"activa": bool(IA_TOKEN), "servicio": "Gemini" if USA_GEMINI else "GitHub Models", "modelo": "", "nuevos": 0, "error": ""}
 
     if IA_TOKEN:
         pendientes, vistos = [], set()
@@ -317,7 +336,7 @@ def resumir_con_ia(notas, carpeta):
             respuesta = None
             for modelo in list(modelos):
                 try:
-                    respuesta = pedir_ia("/inference/chat/completions", {
+                    respuesta = pedir_ia(IA_RUTA_CHAT, {
                         "model": modelo, "temperature": 0.2, "max_tokens": 2000,
                         "response_format": {"type": "json_object"},
                         "messages": [{"role": "system", "content": IA_INSTRUCCIONES},
@@ -328,10 +347,7 @@ def resumir_con_ia(notas, carpeta):
                 except urllib.error.HTTPError as e:
                     detalle = e.read().decode("utf-8", "replace")[:200]
                     estado["error"] = f"{modelo}: HTTP {e.code} {detalle}"
-                    if e.code == 429:
-                        modelos = []          # se acabó el cupo: no insistir en este ciclo
-                        break
-                    modelos.remove(modelo)    # modelo no disponible: probar el siguiente
+                    modelos.remove(modelo)    # sin cupo o no disponible: probar el siguiente
                 except Exception as e:  # noqa: BLE001
                     estado["error"] = f"{modelo}: {type(e).__name__} {str(e)[:120]}"
                     break
