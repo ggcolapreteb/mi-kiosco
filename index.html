@@ -63,6 +63,8 @@
   .lectura .pie { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
   .lectura .leer { font: 600 14px system-ui, sans-serif; background: var(--cat); color: #fff; text-decoration: none; border-radius: 999px; padding: 8px 16px; }
   ol.list .lectura a.leer:visited { color: #fff; }
+  .info .ia { border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; font-size: 11px; }
+  .lectura p.aviso-ia { font-size: 12px; color: var(--muted); margin-top: 8px; }
   .empty { padding: 40px 0; text-align: center; color: var(--muted); }
   details.estado { margin-top: 28px; font-size: 13px; color: var(--muted); }
   details.estado summary { cursor: pointer; }
@@ -221,6 +223,7 @@ function aplicar(d) {
   }
   for (const c of Object.keys(porCat)) porCat[c] = unicas(porCat[c]);
   S.notas = porCat; S.fuentes = d.fuentes || []; S.generado = d.generado || 0;
+  S.ia = d.ia || null;
 }
 
 async function cargar() {
@@ -301,7 +304,7 @@ function pintar() {
         el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', { class: 'sub' }, n.sub), el('span', {}, hace(n.ts))),
         titulo);
       if (!abierta) { if (n.desc) li.append(el('p', { class: 'desc' }, n.desc)); return li; }
-      const texto = n.res || n.desc;
+      const texto = n.ia || n.res || n.desc;
       const cuerpo = el('div', { class: 'lectura' });
       if (n.img) {
         const im = el('img', { src: n.img, alt: '', referrerpolicy: 'no-referrer' });
@@ -310,6 +313,7 @@ function pintar() {
       }
       cuerpo.append(
         texto ? el('p', {}, texto) : el('p', { class: 'sin' }, 'Este medio no publica el texto de sus notas en un feed, solo el titular.'),
+        n.ia ? el('p', { class: 'aviso-ia' }, 'Resumen escrito por una IA a partir de la nota original; puede tener errores.') : '',
         el('div', { class: 'pie' },
           el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer completa en ' + n.medio + ' →'),
           el('button', { class: 'btn', onclick: () => { S.abierta = null; pintar(); } }, 'Cerrar')));
@@ -326,6 +330,8 @@ function pintar() {
   const hora = S.generado ? new Date(S.generado).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
   $('estado').textContent = S.error ? S.error : S.cargando && !S.generado ? 'Cargando…'
     : hora ? `Datos de las ${hora} · ${ok}/${fs.length} fuentes` : 'Sin datos todavía';
+  $('nota-estado').textContent = 'Las noticias las junta un proceso automático en GitHub cada 20 minutos; esta página solo las muestra.'
+    + (S.ia && S.ia.activa ? ` Resúmenes con IA: ${S.ia.con_ia} listos, ${S.ia.pendientes} en espera` + (S.ia.modelo ? ` (${S.ia.modelo})` : '') + (S.ia.error ? ` · último error: ${S.ia.error}` : '') + '.' : '');
   $('fuentes').replaceChildren(...fs.map(f => el('tr', {}, el('td', {}, f.medio),
     el('td', {}, f.tipo === 'google' ? 'Buscador de noticias' : f.tipo === 'mixto' ? 'RSS general' : 'RSS propio'),
     el('td', { class: f.ok && f.n ? 'ok' : 'fail' }, f.ok ? `${f.n} ${f.n === 1 ? 'nota' : 'notas'}${f.msg ? ' (' + f.msg + ')' : ''}` : 'falló: ' + f.msg))));
@@ -349,7 +355,7 @@ function pintarTarjetas(visibles) {
     return;
   }
   sc.replaceChildren(...notas.map((n, i) => {
-    const texto = n.res || n.desc;
+    const texto = n.ia || n.res || n.desc;
     const c = el('article', { class: 'card', 'data-link': n.link });
     if (n.img) {
       const im = el('img', { src: n.img, alt: '', loading: i < 2 ? 'eager' : 'lazy', referrerpolicy: 'no-referrer' });
@@ -357,7 +363,7 @@ function pintarTarjetas(visibles) {
       c.append(im);
     }
     c.append(
-      el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', { class: 'sub' }, n.sub), el('span', {}, hace(n.ts))),
+      el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', { class: 'sub' }, n.sub), el('span', {}, hace(n.ts)), n.ia ? el('span', { class: 'ia', title: 'Resumen escrito por una IA a partir de la nota original; puede tener errores' }, 'Resumen IA') : ''),
       el('h2', {}, n.titulo),
       texto ? el('p', {}, texto) : el('p', { class: 'sin' }, 'Este medio no publica el texto de sus notas en un feed, solo el titular.'),
       el('div', { class: 'pie' },

@@ -11,6 +11,7 @@ on:
 permissions:
   contents: write
   actions: write
+  models: read     # para los resúmenes con IA (GitHub Models)
 
 concurrency:
   group: actualizar
@@ -26,6 +27,8 @@ jobs:
         with:
           python-version: "3.12"
       - name: Actualizar cada 20 minutos
+        env:
+          IA_TOKEN: ${{ github.token }}
         run: |
           git config user.name "kiosco-bot"
           git config user.email "kiosco-bot@users.noreply.github.com"
@@ -33,7 +36,7 @@ jobs:
           while true; do
             git pull -q --rebase origin main || true
             python actualizar.py || true
-            git add data.json
+            git add data.json resumenes.json 2>/dev/null || git add data.json
             if ! git diff --cached --quiet; then
               git commit -q -m "Actualiza noticias"
               git push -q origin HEAD:main || { git pull -q --rebase origin main && git push -q origin HEAD:main; } || true
