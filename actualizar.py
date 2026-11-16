@@ -21,7 +21,9 @@ from urllib.parse import urlparse
 
 LARGO_RESUMEN = 600      # caracteres máximos del párrafo de cada tarjeta
 MAX_POR_FUENTE = 40      # notas que se guardan por fuente
-DIAS_MAXIMO = 3          # se descartan notas más viejas que esto
+DIAS_MAXIMO = 3          # se descartan notas más viejas que esto al leer cada feed
+HORAS_PARRILLA = 2       # la página muestra solo las noticias publicadas en estas últimas horas
+MINIMO_POR_CATEGORIA = 15  # si en ese rato hubo menos que esto, se completa con las más recientes
 ESPERA = 20              # segundos de espera por feed
 
 # Para los feeds "mixtos": qué trozo de la URL manda la nota a qué categoría.
@@ -228,13 +230,13 @@ if USA_GEMINI:
     IA_URL = os.environ.get("IA_URL", "https://generativelanguage.googleapis.com/v1beta/openai")
     IA_TOKEN = GEMINI_KEY
     IA_RUTA_CHAT, IA_RUTA_MODELOS = "/chat/completions", "/models"
-    IA_PEDIDOS_POR_CICLO = 6     # Flash-Lite gratis: ~500 pedidos al día; 72 ciclos x 6 = 432
+    IA_PEDIDOS_POR_CICLO = 8     # Flash-Lite gratis: ~500 pedidos al día; solo se usan los necesarios
 else:
     IA_URL = os.environ.get("IA_URL", "https://models.github.ai")
     IA_TOKEN = os.environ.get("IA_TOKEN", "")
     IA_RUTA_CHAT, IA_RUTA_MODELOS = "/inference/chat/completions", "/catalog/models"
     IA_PEDIDOS_POR_CICLO = 2     # el plan gratis permite ~150 pedidos al día; 72 ciclos x 2 = 144
-IA_NOTAS_POR_PEDIDO = 6
+IA_NOTAS_POR_PEDIDO = 8 if USA_GEMINI else 6
 IA_LARGO_TEXTO = 3000        # caracteres de cada nota que se le pasan a la IA
 IA_TEXTO_MINIMO = 400        # con menos texto que esto no hay nada que resumir
 IA_MODELOS = ["openai/gpt-4.1-mini", "openai/gpt-4o-mini"]   # se prueban en orden
@@ -329,6 +331,8 @@ def resumir_con_ia(notas, carpeta):
                 listas.append(n)
         modelos = elegir_modelos() if listas else []
         for i in range(0, len(listas), IA_NOTAS_POR_PEDIDO):
+            if i and USA_GEMINI:
+                time.sleep(5)   # el plan gratis permite ~15 pedidos por minuto
             grupo = listas[i:i + IA_NOTAS_POR_PEDIDO]
             entrada = "\n\n".join(
                 f"### id {k + 1}\nTitular: {n['titulo']}\nMedio: {n['medio']}\nTexto: {n['_texto'][:IA_LARGO_TEXTO]}"
@@ -337,7 +341,7 @@ def resumir_con_ia(notas, carpeta):
             for modelo in list(modelos):
                 try:
                     respuesta = pedir_ia(IA_RUTA_CHAT, {
-                        "model": modelo, "temperature": 0.2, "max_tokens": 2000,
+                        "model": modelo, "temperature": 0.2, "max_tokens": 4000,
                         "response_format": {"type": "json_object"},
                         "messages": [{"role": "system", "content": IA_INSTRUCCIONES},
                                      {"role": "user", "content": entrada}],
@@ -387,6 +391,22 @@ def resumir_con_ia(notas, carpeta):
     return estado
 
 
+def parrilla(notas, ahora_ms):
+    """Deja solo lo publicado en las últimas HORAS_PARRILLA horas. Si una categoría queda
+    con muy pocas notas (de madrugada, por ejemplo), se completa con las más recientes."""
+    corte = ahora_ms - HORAS_PARRILLA * 3600000
+    salida = []
+    for cat in ("nacional", "internacional", "deportes"):
+        vistas, propias = set(), []
+        for n in sorted((n for n in notas if n["cat"] == cat), key=lambda n: -n["ts"]):
+            if n["link"] not in vistas:
+                vistas.add(n["link"])
+                propias.append(n)
+        recientes = [n for n in propias if n["ts"] >= corte]
+        salida += recientes if len(recientes) >= MINIMO_POR_CATEGORIA else propias[:MINIMO_POR_CATEGORIA]
+    return salida
+
+
 def main():
     carpeta = sys.argv[1] if len(sys.argv) > 1 else "."
     with open(f"{carpeta}/fuentes.json", encoding="utf-8") as fh:
@@ -402,9 +422,10 @@ def main():
     if not notas:
         print("No llegó ninguna nota: se conserva el data.json anterior.")
         return
+    notas = parrilla(notas, ahora_ms)
     estado_ia = resumir_con_ia(notas, carpeta)
     with open(f"{carpeta}/data.json", "w", encoding="utf-8") as fh:
-        json.dump({"generado": ahora_ms, "fuentes": estados, "ia": estado_ia, "notas": notas}, fh, ensure_ascii=False, separators=(",", ":"))
+        json.dump({"generado": ahora_ms, "horas": HORAS_PARRILLA, "fuentes": estados, "ia": estado_ia, "notas": notas}, fh, ensure_ascii=False, separators=(",", ":"))
 
 
 if __name__ == "__main__":

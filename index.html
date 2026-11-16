@@ -223,7 +223,7 @@ function aplicar(d) {
   }
   for (const c of Object.keys(porCat)) porCat[c] = unicas(porCat[c]);
   S.notas = porCat; S.fuentes = d.fuentes || []; S.generado = d.generado || 0;
-  S.ia = d.ia || null;
+  S.ia = d.ia || null; S.horas = d.horas || 0;
 }
 
 async function cargar() {
@@ -330,7 +330,7 @@ function pintar() {
   const hora = S.generado ? new Date(S.generado).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
   $('estado').textContent = S.error ? S.error : S.cargando && !S.generado ? 'Cargando…'
     : hora ? `Datos de las ${hora} · ${ok}/${fs.length} fuentes` : 'Sin datos todavía';
-  $('nota-estado').textContent = 'Las noticias las junta un proceso automático en GitHub cada 20 minutos; esta página solo las muestra.'
+  $('nota-estado').textContent = `Un proceso automático en GitHub revisa los medios cada 20 minutos. Se muestran solo las noticias de las últimas ${S.horas || 2} horas (o las ${15} más recientes de la categoría si hubo pocas).`
     + (S.ia && S.ia.activa ? ` Resúmenes con IA: ${S.ia.con_ia} listos, ${S.ia.pendientes} en espera` + (S.ia.modelo ? ` (${S.ia.servicio || ''} ${S.ia.modelo})` : '') + (S.ia.error ? ` · último error: ${S.ia.error}` : '') + '.' : '');
   $('fuentes').replaceChildren(...fs.map(f => el('tr', {}, el('td', {}, f.medio),
     el('td', {}, f.tipo === 'google' ? 'Buscador de noticias' : f.tipo === 'mixto' ? 'RSS general' : 'RSS propio'),
