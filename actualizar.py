@@ -8,7 +8,9 @@ import html
 import json
 import re
 import sys
+import threading
 import time
+import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
@@ -33,14 +35,30 @@ NAVEGADOR = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 ES_BUSCADOR = re.compile(r"news\.google\.|bing\.com")
 
 
+# Los buscadores bloquean si reciben muchos pedidos juntos: a ellos se les pide de a uno y con pausa.
+TURNO_BUSCADOR = threading.Lock()
+PAUSA_BUSCADOR = 1.5
+
+
 def bajar(url):
     req = urllib.request.Request(url, headers={
         "User-Agent": NAVEGADOR,
         "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
         "Accept-Language": "es-CL,es;q=0.9",
     })
-    with urllib.request.urlopen(req, timeout=ESPERA) as r:
-        return r.read()
+    if not ES_BUSCADOR.search(url):
+        with urllib.request.urlopen(req, timeout=ESPERA) as r:
+            return r.read()
+    with TURNO_BUSCADOR:
+        for intento in (1, 2):
+            time.sleep(PAUSA_BUSCADOR)
+            try:
+                with urllib.request.urlopen(req, timeout=ESPERA) as r:
+                    return r.read()
+            except urllib.error.HTTPError as e:
+                if intento == 2 or e.code not in (429, 503):
+                    raise
+                time.sleep(15)
 
 
 def local(tag):
