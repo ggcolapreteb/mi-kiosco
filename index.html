@@ -413,6 +413,12 @@ function el(tag, attrs, ...hijos) {
   for (const h of hijos) e.append(h);
   return e;
 }
+// Tiempo de lectura del titular más el párrafo, a un ritmo normal de unas 200 palabras por minuto.
+function lectura(n) {
+  const palabras = (n.titulo + ' ' + (n.ia || n.res || n.desc || '')).trim().split(/\s+/).length;
+  const seg = Math.max(5, Math.round(palabras / 200 * 60 / 5) * 5);
+  return seg < 60 ? seg + ' s de lectura' : Math.round(seg / 60) + ' min de lectura';
+}
 function hace(ts) {
   if (!ts) return '';
   const m = Math.round((Date.now() - ts) / 60000);
@@ -528,7 +534,7 @@ function pintar() {
         im.addEventListener('error', () => im.remove());
         return im;
       };
-      const firma = el('div', { class: 'firma' }, el('span', { class: 'medio' }, n.medio), el('span', {}, hace(n.ts)),
+      const firma = el('div', { class: 'firma' }, el('span', { class: 'medio' }, n.medio), el('span', {}, hace(n.ts)), el('span', {}, lectura(n)),
         n.ia ? el('span', { class: 'ia', title: 'Resumen escrito por una IA a partir de la nota original; puede tener errores' }, 'Resumen IA') : '');
       const puesto = abierta ? 'abierta' : lugar === 0 ? 'principal' : lugar <= 4 ? 'lateral' : '';
       if (!abierta) lugar++;
@@ -623,7 +629,7 @@ function pintarTarjetas(todas) {
       im.addEventListener('error', () => foto.replaceWith(placa()));
     }
     c.append(foto, el('div', { class: 'texto' },
-      el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', {}, hace(n.ts)), el('span', { class: 'sub' }, n.sub),
+      el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', {}, hace(n.ts)), el('span', { class: 'sub' }, n.sub), el('span', {}, lectura(n)),
         n.ia ? el('span', { class: 'ia', title: 'Resumen escrito por una IA a partir de la nota original; puede tener errores' }, 'Resumen IA') : ''),
       el('h2', {}, n.titulo),
       texto ? el('p', {}, texto) : el('p', { class: 'sin' }, 'Este medio no publica el texto de sus notas en un feed, solo el titular.'),
