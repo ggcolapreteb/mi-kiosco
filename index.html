@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Kiosco · medios chilenos</title>
+<style>
+  :root {
+    --bg: #f6f3ec; --panel: #fffdf8; --ink: #1b1a17; --muted: #6f6a5f; --line: #ddd6c6;
+    --chip: #ebe5d6; --accent: #b3261e; --visited: #8a8474;
+    --nacional: #b3261e; --internacional: #1f5fa8; --deportes: #1f7a4a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15140f; --panel: #1d1c16; --ink: #ece7da; --muted: #a09a8a; --line: #34322a;
+      --chip: #2a2820; --visited: #7d7868;
+      --nacional: #ef6a5f; --internacional: #6aa8ee; --deportes: #58c08a;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px 80px; }
+  header.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    padding: 22px 0 10px; border-bottom: 3px double var(--ink); flex-wrap: wrap; }
+  h1 { font: 700 30px/1 Georgia, "Times New Roman", serif; margin: 0; letter-spacing: -.5px; }
+  h1 small { font: 400 13px system-ui, sans-serif; color: var(--muted); letter-spacing: 0; margin-left: 8px; }
+  .meta { font-size: 13px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .btn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 5px 10px; font-size: 13px; }
+  .btn:hover { border-color: var(--ink); }
+  nav.tabs { display: flex; gap: 0; margin-top: 14px; border-bottom: 1px solid var(--line); }
+  nav.tabs button { flex: 1; background: none; border: 0; border-bottom: 3px solid transparent;
+    padding: 10px 6px; font: 700 15px/1.2 Georgia, serif; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+  nav.tabs button[aria-selected="true"] { color: var(--cat); border-bottom-color: var(--cat); }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; align-items: center; }
+  .row .label { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); width: 100%; }
+  .chip { border: 1px solid transparent; background: var(--chip); border-radius: 999px; padding: 4px 11px; font-size: 13px; }
+  .chip b { font-weight: 400; color: var(--muted); margin-left: 4px; font-size: 12px; }
+  .chip[aria-pressed="true"] { background: var(--cat); color: #fff; }
+  .chip[aria-pressed="true"] b { color: rgba(255,255,255,.8); }
+  .chip.medio[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+  .chip.medio[aria-pressed="true"] { background: var(--chip); color: var(--ink); border-color: var(--line); }
+  input[type=search] { flex: 1; min-width: 180px; font: inherit; font-size: 14px; padding: 7px 10px; border: 1px solid var(--line);
+    border-radius: 6px; background: var(--panel); color: var(--ink); }
+  ol.list { list-style: none; margin: 16px 0 0; padding: 0; }
+  ol.list li { padding: 13px 0; border-bottom: 1px solid var(--line); }
+  ol.list a { color: var(--ink); text-decoration: none; font: 700 19px/1.25 Georgia, "Times New Roman", serif; }
+  ol.list a:hover { text-decoration: underline; }
+  ol.list a:visited { color: var(--visited); }
+  .info { font-size: 12.5px; color: var(--muted); margin-bottom: 3px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .info .medio { font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .5px; font-size: 11.5px; }
+  .info .sub { color: var(--cat); }
+  .desc { font-size: 14px; color: var(--muted); margin: 4px 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .empty { padding: 40px 0; text-align: center; color: var(--muted); }
+  details.estado { margin-top: 28px; font-size: 13px; color: var(--muted); }
+  details.estado summary { cursor: pointer; }
+  details.estado table { border-collapse: collapse; margin-top: 8px; width: 100%; }
+  details.estado td { padding: 3px 8px 3px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .ok { color: var(--deportes); } .fail { color: var(--nacional); }
+  .more { display: block; margin: 18px auto 0; }
+  /* --- modo tarjetas --- */
+  #tk { position: fixed; inset: 0; background: var(--bg); z-index: 10; display: none; }
+  body.tarjetas { overflow: hidden; }
+  body.tarjetas #tk { display: block; }
+  #tkbar { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 8px 14px 18px;
+    background: linear-gradient(var(--bg) 78%, transparent); }
+  #tkbar .fila { display: flex; align-items: center; gap: 10px; max-width: 640px; margin: 0 auto; }
+  #tkbar nav.tabs { flex: 1; margin-top: 0; }
+  #tkbar nav.tabs button { font-size: 13px; padding: 9px 2px; }
+  #tksubs { display: flex; gap: 6px; overflow-x: auto; max-width: 640px; margin: 8px auto 0; scrollbar-width: none; }
+  #tksubs::-webkit-scrollbar { display: none; }
+  #tksubs .chip { white-space: nowrap; flex: none; }
+  #tkscroll { height: 100%; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; }
+  #tkscroll::-webkit-scrollbar { display: none; }
+  .card { height: 100vh; height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column;
+    justify-content: center; padding: 112px 22px 34px; max-width: 640px; margin: 0 auto; }
+  .card img { width: 100%; max-height: 30vh; object-fit: cover; border-radius: 12px; margin-bottom: 16px; background: var(--chip); }
+  .card h2 { font: 700 clamp(23px, 4.4vw, 33px)/1.16 Georgia, "Times New Roman", serif; margin: 6px 0 12px; letter-spacing: -.2px; }
+  .card p { font-size: 17px; line-height: 1.52; margin: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 10; -webkit-box-orient: vertical; }
+  .card p.sin { color: var(--muted); font-size: 14px; font-style: italic; }
+  .card .pie { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+  .card .leer { background: var(--cat); color: #fff; text-decoration: none; border-radius: 999px; padding: 9px 18px; font-size: 14px; font-weight: 600; }
+  .card .pos { font-size: 12px; color: var(--muted); }
+  .card.vacia { text-align: center; color: var(--muted); }
+  @media (max-width: 520px) { h1 { font-size: 25px; } ol.list a { font-size: 17px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Mi Kiosco <small>medios chilenos</small></h1>
+    <div class="meta"><span id="estado">Cargando…</span><button class="btn" id="aTarjetas">Tarjetas</button><button class="btn" id="refrescar">Actualizar</button></div>
+  </header>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+  <div class="row" id="subs"></div>
+  <div class="row"><input type="search" id="buscar" placeholder="Buscar en titulares…" aria-label="Buscar en titulares"></div>
+  <div class="row" id="medios"></div>
+  <ol class="list" id="lista"></ol>
+  <button class="btn more" id="mas" hidden>Ver más</button>
+  <details class="estado"><summary>Estado de las fuentes</summary><p id="nota-estado">Las noticias las junta un proceso automático en GitHub cada 20 minutos aprox.; esta página solo las muestra.</p><table id="fuentes"></table></details>
+</div>
+
+<div id="tk">
+  <div id="tkbar">
+    <div class="fila"><nav class="tabs" id="tktabs" role="tablist"></nav><button class="btn" id="aLista">Lista</button></div>
+    <div id="tksubs"></div>
+  </div>
+  <div id="tkscroll"></div>
+</div>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN de categorías y subcategorías.
+   (La lista de medios está en el archivo fuentes.json.)
+   ===================================================================== */
+
+const CATEGORIAS = {
+  nacional: {
+    nombre: 'Nacional', resto: 'General',
+    subs: {
+      'Política': ['gobierno', 'presidente', 'presidenta', 'la moneda', 'congreso', 'senado', 'senador*', 'diputad*', 'ministr*', 'subsecretari*', 'partido', 'partidos', 'elecciones', 'eleccion', 'servel', 'oposicion', 'oficialismo', 'proyecto de ley', 'reforma', 'candidat*', 'gabinete', 'acusacion constitucional', 'tribunal constitucional', 'contraloria', 'cancilleria', 'canciller', 'politica', 'parlamentari*', 'bancada', 'plebiscito'],
+      'Economía': ['economia', 'banco central', 'ipc', 'inflacion', 'dolar', 'uf', 'pib', 'imacec', 'hacienda', 'afp', 'pensiones', 'cobre', 'codelco', 'litio', 'empleo', 'desempleo', 'tasa de interes', 'bolsa', 'ipsa', 'sii', 'impuesto*', 'presupuesto', 'sueldo minimo', 'salario minimo', 'inversion*', 'mercados', 'pulso', 'negocios', 'empresa', 'empresas', 'cmf', 'isapre*', 'exportaciones', 'aranceles'],
+      'Seguridad y justicia': ['carabiner*', 'pdi', 'fiscalia', 'fiscal', 'detenid*', 'homicidio*', 'asesin*', 'balacera', 'baleado', 'robo', 'robos', 'asalto', 'encerrona', 'portonazo', 'narcotrafico', 'narco', 'crimen', 'crimen organizado', 'tribunal', 'corte suprema', 'corte de apelaciones', 'prision preventiva', 'formaliz*', 'condena*', 'delincuen*', 'secuestro*', 'gendarmeria', 'carcel', 'policial', 'querella', 'imputad*', 'femicidio'],
+      'Sociedad': ['educacion', 'mineduc', 'colegio*', 'universidad*', 'paes', 'salud', 'minsal', 'hospital*', 'cesfam', 'fonasa', 'transporte', 'metro', 'red movilidad', 'vivienda', 'clima', 'lluvia*', 'temperaturas', 'sismo', 'temblor', 'senapred', 'incendio*', 'feriado', 'medioambiente', 'medio ambiente', 'migracion', 'profesores', 'paro', 'bono', 'subsidio*'],
+      'Regiones': ['region de', 'regiones', 'arica', 'tarapaca', 'iquique', 'antofagasta', 'calama', 'atacama', 'copiapo', 'coquimbo', 'la serena', 'valparaiso', 'vina del mar', 'ohiggins', 'rancagua', 'maule', 'talca', 'curico', 'nuble', 'chillan', 'biobio', 'concepcion', 'talcahuano', 'los angeles', 'araucania', 'temuco', 'los rios', 'valdivia', 'los lagos', 'osorno', 'puerto montt', 'chiloe', 'aysen', 'coyhaique', 'magallanes', 'punta arenas', 'rapa nui']
+    }
+  },
+  internacional: {
+    nombre: 'Internacional', resto: 'Otros',
+    subs: {
+      'Medio Oriente': ['israel', 'israeli*', 'gaza', 'palestin*', 'hamas', 'iran', 'irani*', 'teheran', 'libano', 'hezbola', 'siria', 'arabia saudita', 'qatar', 'yemen', 'huties', 'irak', 'netanyahu', 'turquia', 'cisjordania', 'emiratos', 'medio oriente'],
+      'Europa': ['union europea', 'ue', 'europa', 'europe*', 'espana', 'francia', 'macron', 'alemania', 'reino unido', 'britanic*', 'londres', 'italia', 'rusia', 'ruso', 'rusa', 'putin', 'ucrania', 'zelenski', 'kiev', 'moscu', 'kremlin', 'otan', 'vaticano', 'papa', 'portugal', 'polonia', 'hungria', 'bruselas', 'paris', 'berlin', 'madrid', 'grecia', 'suecia', 'paises bajos', 'suiza'],
+      'América Latina': ['argentin*', 'milei', 'brasil', 'lula', 'peru', 'peruano*', 'bolivia', 'bolivian*', 'venezuela', 'venezolan*', 'maduro', 'colombia', 'colombian*', 'mexico', 'mexican*', 'ecuador', 'uruguay', 'paraguay', 'cuba', 'haiti', 'nicaragua', 'el salvador', 'bukele', 'panama', 'guatemala', 'honduras', 'costa rica', 'republica dominicana', 'latinoamerica', 'america latina', 'mercosur', 'celac'],
+      'EE.UU. y Canadá': ['estados unidos', 'ee.uu', 'eeuu', 'ee uu', 'estadounidense*', 'trump', 'casa blanca', 'washington', 'pentagono', 'canada', 'nueva york', 'california', 'texas', 'florida', 'fbi', 'cia', 'reserva federal', 'republicanos', 'democratas'],
+      'Asia y Oceanía': ['china', 'chino', 'xi jinping', 'pekin', 'japon', 'japones*', 'corea', 'india', 'pakistan', 'taiwan', 'filipinas', 'indonesia', 'australia', 'nueva zelanda', 'tailandia', 'vietnam', 'afganistan', 'hong kong', 'asia', 'bangladesh', 'myanmar'],
+      'África': ['africa', 'african*', 'nigeria', 'sudan', 'egipto', 'sudafrica', 'congo', 'etiopia', 'kenia', 'marruecos', 'somalia', 'libia', 'mali', 'senegal', 'tunez', 'argelia']
+    }
+  },
+  deportes: {
+    nombre: 'Deportes', resto: 'Más deportes',
+    subs: {
+      'La Roja': ['la roja', 'seleccion chilena', 'seleccion nacional', 'eliminatorias', 'roja sub', 'la roja femenina'],
+      'Tenis': ['tenis', 'tenista*', 'atp', 'wta', 'tabilo', 'jarry', 'garin', 'roland garros', 'wimbledon', 'us open', 'australian open', 'copa davis', 'grand slam', 'masters 1000', 'djokovic', 'alcaraz', 'sinner'],
+      'Básquetbol': ['basquetbol', 'basquet', 'baloncesto', 'nba', 'lnb', 'liga nacional de basquetbol', 'lakers', 'celtics', 'warriors', 'fiba'],
+      'Motor': ['formula 1', 'f1', 'rally', 'dakar', 'motogp', 'gran premio', 'verstappen', 'hamilton', 'ferrari', 'mclaren', 'red bull', 'automovilismo'],
+      'Fútbol chileno': ['colo colo', 'albos', 'cacique', 'universidad de chile', 'la u', 'azules', 'universidad catolica', 'la uc', 'cruzados', 'campeonato nacional', 'liga de primera', 'primera b', 'anfp', 'copa chile', 'supercopa', 'superclasico', 'cobreloa', 'everton', 'wanderers', 'huachipato', 'palestino', 'union espanola', 'audax', 'ohiggins', 'coquimbo unido', 'deportes iquique', 'nublense', 'deportes la serena', 'limache', 'union la calera', 'cobresal', 'futbol chileno', 'futbol nacional', 'estadio monumental', 'estadio nacional'],
+      'Fútbol internacional': ['champions', 'premier league', 'laliga', 'la liga', 'real madrid', 'barcelona', 'barca', 'atletico de madrid', 'manchester', 'liverpool', 'arsenal', 'chelsea', 'psg', 'bayern', 'juventus', 'inter de milan', 'milan', 'serie a', 'bundesliga', 'messi', 'cristiano', 'mbappe', 'haaland', 'libertadores', 'sudamericana', 'river plate', 'boca juniors', 'flamengo', 'mundial', 'fifa', 'uefa', 'conmebol', 'inter miami', 'mls', 'balon de oro', 'futbol internacional', 'copa america', 'eurocopa']
+    }
+  }
+};
+
+// Subcategorías que solo valen para Chile: en un medio de afuera, "la Roja" o
+// "selección nacional" hablan de otro país, así que ahí solo se usan si la nota nombra a Chile.
+const SUBS_SOLO_CHILE = ['La Roja', 'Fútbol chileno'];
+
+/* ===================== FIN DE LA CONFIGURACIÓN ===================== */
+
+const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/['’`]/g, '');
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const REGLAS = {};
+for (const [cat, def] of Object.entries(CATEGORIAS)) {
+  REGLAS[cat] = Object.entries(def.subs).map(([sub, kws]) => {
+    const alt = kws.map(k => { k = norm(k); return k.endsWith('*') ? escRe(k.slice(0, -1)) + '[a-z]*' : escRe(k); }).join('|');
+    return [sub, new RegExp('(?<![a-z0-9])(?:' + alt + ')(?![a-z0-9])', 'g')];
+  });
+}
+function clasificar(cat, texto, afuera) {
+  let mejor = CATEGORIAS[cat].resto, max = 0;
+  const sinLocales = afuera && !/(?<![a-z])chile/.test(texto);
+  for (const [sub, re] of REGLAS[cat]) {
+    if (sinLocales && SUBS_SOLO_CHILE.includes(sub)) continue;
+    const n = (texto.match(re) || []).length;
+    if (n > max) { max = n; mejor = sub; }
+  }
+  return mejor;
+}
+
+
+/* ------------------------------ estado ------------------------------ */
+const $ = id => document.getElementById(id);
+const guardar = (k, v) => { try { localStorage.setItem('kiosco4:' + k, JSON.stringify(v)); } catch (e) {} };
+const leer = (k, d) => { try { const v = localStorage.getItem('kiosco4:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+
+const S = {
+  cat: leer('cat', 'nacional'), sub: null, q: '', limite: 60, modo: leer('modo', 'tarjetas'),
+  ocultos: new Set(leer('ocultos', [])),
+  notas: {}, fuentes: [], generado: 0, cargando: false, error: '',
+};
+if (!CATEGORIAS[S.cat]) S.cat = 'nacional';
+
+function unicas(notas) {
+  const vistos = new Set(), out = [];
+  for (const n of notas.sort((a, b) => b.ts - a.ts)) {
+    const k = n.medio + '|' + norm(n.titulo).replace(/[^a-z0-9]+/g, ' ').trim();
+    if (vistos.has(k) || vistos.has(n.link)) continue;
+    vistos.add(k); vistos.add(n.link); out.push(n);
+  }
+  return out;
+}
+
+function aplicar(d) {
+  const porCat = {};
+  for (const n of d.notas || []) {
+    if (!CATEGORIAS[n.cat]) continue;
+    let ruta = '';
+    if (!n.buscador) { try { ruta = new URL(n.link).pathname.replace(/[-_/]+/g, ' '); } catch (e) {} }
+    n.sub = n.sub || clasificar(n.cat, norm(n.titulo + ' ' + (n.desc || '') + ' ' + ruta), n.afuera);
+    (porCat[n.cat] = porCat[n.cat] || []).push(n);
+  }
+  for (const c of Object.keys(porCat)) porCat[c] = unicas(porCat[c]);
+  S.notas = porCat; S.fuentes = d.fuentes || []; S.generado = d.generado || 0;
+}
+
+async function cargar() {
+  if (S.cargando) return;
+  S.cargando = true; pintar();
+  try {
+    const r = await fetch('data.json?' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (d.generado !== S.generado) aplicar(d);
+    S.error = '';
+  } catch (e) {
+    S.error = location.protocol === 'file:' ? 'Esta versión funciona publicada en GitHub, no abierta como archivo' : 'No se pudo leer data.json';
+  }
+  S.cargando = false; pintar();
+}
+
+/* ------------------------------ interfaz ------------------------------ */
+function el(tag, attrs, ...hijos) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'onclick') e.addEventListener('click', v); else if (v != null) e.setAttribute(k, String(v));
+  }
+  for (const h of hijos) e.append(h);
+  return e;
+}
+function hace(ts) {
+  if (!ts) return '';
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return 'ahora';
+  if (m < 60) return 'hace ' + m + ' min';
+  if (m < 60 * 24) return 'hace ' + Math.round(m / 60) + ' h';
+  return new Date(ts).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+}
+
+function pintar() {
+  const def = CATEGORIAS[S.cat];
+  document.body.style.setProperty('--cat', `var(--${S.cat})`);
+
+  const hacerTabs = () => Object.entries(CATEGORIAS).map(([k, c]) =>
+    el('button', { role: 'tab', 'aria-selected': k === S.cat, onclick: () => { S.cat = k; S.sub = null; S.limite = 60; guardar('cat', k); pintar(); } }, c.nombre));
+  $('tabs').replaceChildren(...hacerTabs());
+  $('tktabs').replaceChildren(...hacerTabs());
+
+  const todas = (S.notas[S.cat] || []).filter(n => !S.ocultos.has(n.medio));
+  const q = norm(S.q);
+  const conBusqueda = q ? todas.filter(n => norm(n.titulo + ' ' + n.desc).includes(q)) : todas;
+  const cuenta = {};
+  for (const n of conBusqueda) cuenta[n.sub] = (cuenta[n.sub] || 0) + 1;
+
+  const nombresSub = [...Object.keys(def.subs), def.resto];
+  const hacerSubs = () => [
+    el('button', { class: 'chip', 'aria-pressed': S.sub === null, onclick: () => { S.sub = null; S.limite = 60; pintar(); } }, 'Todo', el('b', {}, conBusqueda.length)),
+    ...nombresSub.map(s => el('button', { class: 'chip', 'aria-pressed': S.sub === s, onclick: () => { S.sub = s; S.limite = 60; pintar(); } }, s, el('b', {}, cuenta[s] || 0)))];
+  $('subs').replaceChildren(...hacerSubs());
+  const tksubs = $('tksubs'), corrido = tksubs.scrollLeft;
+  tksubs.replaceChildren(...hacerSubs()); tksubs.scrollLeft = corrido;
+
+  $('medios').replaceChildren(el('span', { class: 'label' }, 'Medios'), ...[...new Set(S.fuentes.filter(f => f.cat === S.cat || f.cat === 'auto').map(f => f.medio))].map(m =>
+    el('button', { class: 'chip medio', 'aria-pressed': !S.ocultos.has(m), onclick: () => {
+      S.ocultos.has(m) ? S.ocultos.delete(m) : S.ocultos.add(m); guardar('ocultos', [...S.ocultos]); pintar(); } }, m)));
+
+  const visibles = S.sub ? conBusqueda.filter(n => n.sub === S.sub) : conBusqueda;
+  const lista = $('lista');
+  if (!visibles.length) {
+    lista.replaceChildren(el('li', { class: 'empty' }, S.cargando ? 'Cargando titulares…'
+      : (S.notas[S.cat] || []).length ? 'No hay titulares con ese filtro.' : 'Todavía no hay noticias cargadas. Abajo está el detalle por fuente.'));
+  } else {
+    lista.replaceChildren(...visibles.slice(0, S.limite).map(n => el('li', {},
+      el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', { class: 'sub' }, n.sub), el('span', {}, hace(n.ts))),
+      el('a', { href: n.link, target: '_blank', rel: 'noopener noreferrer' }, n.titulo),
+      n.desc ? el('p', { class: 'desc' }, n.desc) : '')));
+  }
+  $('mas').hidden = visibles.length <= S.limite;
+  document.body.classList.toggle('tarjetas', S.modo === 'tarjetas');
+  if (S.modo === 'tarjetas') pintarTarjetas(visibles);
+
+  const fs = S.fuentes.filter(f => f.cat === S.cat || f.cat === 'auto');
+  const ok = fs.filter(f => f.ok && f.n).length;
+  const hora = S.generado ? new Date(S.generado).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '';
+  $('estado').textContent = S.error ? S.error : S.cargando && !S.generado ? 'Cargando…'
+    : hora ? `Datos de las ${hora} · ${ok}/${fs.length} fuentes` : 'Sin datos todavía';
+  $('fuentes').replaceChildren(...fs.map(f => el('tr', {}, el('td', {}, f.medio),
+    el('td', {}, f.tipo === 'google' ? 'Buscador de noticias' : f.tipo === 'mixto' ? 'RSS general' : 'RSS propio'),
+    el('td', { class: f.ok && f.n ? 'ok' : 'fail' }, f.ok ? `${f.n} ${f.n === 1 ? 'nota' : 'notas'}${f.msg ? ' (' + f.msg + ')' : ''}` : 'falló: ' + f.msg))));
+}
+
+let tkFirma = '', tkContexto = '';
+function pintarTarjetas(visibles) {
+  const sc = $('tkscroll');
+  const notas = visibles.slice(0, 200);
+  const cargando = S.cargando;
+  const firma = S.cat + '|' + S.sub + '|' + cargando + '|' + notas.map(n => n.link).join('|');
+  if (firma === tkFirma) return;
+  tkFirma = firma;
+  const contexto = S.cat + '|' + S.sub + '|' + S.q;
+  const alto = sc.clientHeight || 1;
+  const actual = contexto === tkContexto && sc.children[Math.round(sc.scrollTop / alto)];
+  const linkActual = actual ? actual.dataset.link : null;
+  tkContexto = contexto;
+  if (!notas.length) {
+    sc.replaceChildren(el('article', { class: 'card vacia' }, cargando ? 'Cargando titulares…' : 'No hay noticias con este filtro. Prueba otra subcategoría o pulsa Lista para ver el estado de las fuentes.'));
+    return;
+  }
+  sc.replaceChildren(...notas.map((n, i) => {
+    const texto = n.res || n.desc;
+    const c = el('article', { class: 'card', 'data-link': n.link });
+    if (n.img) {
+      const im = el('img', { src: n.img, alt: '', loading: i < 2 ? 'eager' : 'lazy', referrerpolicy: 'no-referrer' });
+      im.addEventListener('error', () => im.remove());
+      c.append(im);
+    }
+    c.append(
+      el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', { class: 'sub' }, n.sub), el('span', {}, hace(n.ts))),
+      el('h2', {}, n.titulo),
+      texto ? el('p', {}, texto) : el('p', { class: 'sin' }, 'Este medio no publica el texto de sus notas en un feed, solo el titular.'),
+      el('div', { class: 'pie' },
+        el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer en ' + n.medio + ' →'),
+        el('span', { class: 'pos' }, (i + 1) + ' / ' + notas.length)));
+    return c;
+  }));
+  const destino = linkActual && [...sc.children].find(c => c.dataset.link === linkActual);
+  sc.scrollTop = destino ? destino.offsetTop : 0;
+}
+function modo(m) { S.modo = m; guardar('modo', m); tkFirma = ''; pintar(); }
+$('aTarjetas').addEventListener('click', () => modo('tarjetas'));
+$('aLista').addEventListener('click', () => modo('lista'));
+document.addEventListener('keydown', e => {
+  if (S.modo !== 'tarjetas' || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  const sc = $('tkscroll');
+  const dir = ['ArrowDown', 'j', ' ', 'PageDown'].includes(e.key) ? 1 : ['ArrowUp', 'k', 'PageUp'].includes(e.key) ? -1 : 0;
+  if (!dir) return;
+  e.preventDefault();
+  sc.scrollBy({ top: dir * sc.clientHeight, behavior: 'smooth' });
+});
+
+$('refrescar').addEventListener('click', cargar);
+$('mas').addEventListener('click', () => { S.limite += 60; pintar(); });
+$('buscar').addEventListener('input', e => { S.q = e.target.value; S.limite = 60; pintar(); });
+setInterval(() => { if (!document.hidden) cargar(); }, 5 * 60000);
+cargar();
+</script>
+</body>
+</html>
