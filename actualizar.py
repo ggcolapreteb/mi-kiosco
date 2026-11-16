@@ -174,6 +174,8 @@ def convertir(f, crudas, ahora_ms):
         res = resumir(cuerpo if len(cuerpo) > len(bajada) else bajada)
         if res.lower() == titulo.lower():
             res = ""
+        if not res:
+            continue  # solo se guardan notas que traen texto, no titulares sueltos
         img = "" if buscador else (x["img"] or primera_imagen(x["cont"]) or primera_imagen(x["desc"]))
         if not img.startswith("http"):
             img = ""
