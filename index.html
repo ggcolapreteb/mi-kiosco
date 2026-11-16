@@ -141,6 +141,9 @@
   .btn.oir[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
   .card .pos { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .card.vacia { justify-content: center; color: var(--muted); font-size: 17px; }
+  .card.fin { align-items: flex-start; gap: 6px; }
+  .card.fin h2 { color: var(--ink); margin: 0 0 6px; }
+  .card.fin p { overflow: visible; text-align: left; max-width: 46ch; margin-bottom: 18px; }
 
   @media (min-width: 960px) and (min-height: 560px) {
     .card { max-width: 1080px; flex-direction: row; align-items: stretch; gap: 34px; padding: 132px 28px 44px; }
@@ -564,8 +567,26 @@ function pintar() {
 }
 
 let tkFirma = '', tkContexto = '';
-function pintarTarjetas(visibles) {
+// Noticias ya vistas en tarjetas: se guardan en este navegador y no vuelven a aparecer.
+const vistas = new Set(leer('vistas', []));
+let enVista = null;
+function marcarVista(link) {
+  if (vistas.has(link)) return;
+  vistas.add(link);
+  guardar('vistas', [...vistas].slice(-3000));
+}
+function mostrarVistas(links) {
+  links.forEach(l => vistas.delete(l));
+  guardar('vistas', [...vistas]);
+  enVista = null; tkFirma = ''; tkContexto = ''; pintar();
+}
+
+function pintarTarjetas(todas) {
   const sc = $('tkscroll');
+  // Cambiar de sección o de filtro no cuenta como haber visto la tarjeta que estaba en pantalla.
+  if (S.cat + '|' + S.sub + '|' + S.q !== tkContexto) enVista = null;
+  const yaVistas = todas.filter(n => vistas.has(n.link) && n.link !== enVista);
+  const visibles = todas.filter(n => !vistas.has(n.link) || n.link === enVista);
   const notas = visibles.slice(0, 200);
   const cargando = S.cargando;
   const firma = S.cat + '|' + S.sub + '|' + cargando + '|' + notas.map(n => n.link).join('|');
@@ -576,8 +597,19 @@ function pintarTarjetas(visibles) {
   const actual = contexto === tkContexto && sc.children[Math.round(sc.scrollTop / alto)];
   const linkActual = actual ? actual.dataset.link : null;
   tkContexto = contexto;
+  const cierre = () => {
+    const c = el('article', { class: 'card vacia fin' },
+      el('h2', {}, notas.length ? 'Eso es todo por ahora' : 'Ya viste todo lo de aquí'),
+      el('p', {}, 'Las noticias que ya pasaste no vuelven a aparecer. Las nuevas llegan solas cada 20 minutos.'));
+    if (yaVistas.length) c.append(el('button', { class: 'btn', onclick: () => mostrarVistas(yaVistas.map(n => n.link)) },
+      yaVistas.length === 1 ? 'Volver a mostrar la que ya vi' : `Volver a mostrar las ${yaVistas.length} que ya vi`));
+    return c;
+  };
   if (!notas.length) {
-    sc.replaceChildren(el('article', { class: 'card vacia' }, cargando ? 'Cargando titulares…' : 'No hay noticias con este filtro. Prueba otra subcategoría o pulsa Lista para ver el estado de las fuentes.'));
+    sc.replaceChildren(cargando ? el('article', { class: 'card vacia' }, 'Cargando titulares…')
+      : yaVistas.length ? cierre()
+      : el('article', { class: 'card vacia' }, 'No hay noticias con este filtro. Prueba otra subcategoría o pulsa "Ver en lista" para revisar el estado de las fuentes.'));
+    riel();
     return;
   }
   sc.replaceChildren(...notas.map((n, i) => {
@@ -601,7 +633,7 @@ function pintarTarjetas(visibles) {
           botonEscuchar(n)),
         el('span', { class: 'pos' }, (i + 1) + ' de ' + notas.length))));
     return c;
-  }));
+  }), cierre());
   const destino = linkActual && [...sc.children].find(c => c.dataset.link === linkActual);
   sc.scrollTop = destino ? destino.offsetTop : 0;
   sc.querySelectorAll('.card .texto > p').forEach(p => p.classList.toggle('larga', p.scrollHeight > p.clientHeight + 4));
@@ -611,6 +643,9 @@ function riel() {
   const sc = $('tkscroll'), n = sc.querySelectorAll('.card[data-link]').length;
   const i = Math.round(sc.scrollTop / (sc.clientHeight || 1)) + 1;
   const enPantalla = sc.children[i - 1];
+  // Al pasar a otra tarjeta, la anterior queda como vista.
+  const link = enPantalla && enPantalla.dataset.link || null;
+  if (S.modo === 'tarjetas' && link !== enVista) { if (enVista) marcarVista(enVista); enVista = link; }
   if (sonando && S.modo === 'tarjetas' && enPantalla && enPantalla.dataset.link !== sonando) callar();
   $('tkriel').firstElementChild.style.height = (n ? Math.min(100, i / n * 100) : 0) + '%';
 }
