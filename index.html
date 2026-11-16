@@ -54,6 +54,15 @@
   .info .medio { font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .5px; font-size: 11.5px; }
   .info .sub { color: var(--cat); }
   .desc { font-size: 14px; color: var(--muted); margin: 4px 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  ol.list a.titular { cursor: pointer; }
+  ol.list li.abierta { background: var(--panel); margin: 0 -14px; padding: 16px 14px 18px; border-radius: 10px; border-bottom-color: transparent; }
+  .lectura { margin-top: 12px; }
+  .lectura img { width: 100%; max-height: 340px; object-fit: cover; border-radius: 10px; margin-bottom: 12px; background: var(--chip); }
+  .lectura p { font-size: 16.5px; line-height: 1.55; margin: 0; }
+  .lectura p.sin { color: var(--muted); font-size: 14px; font-style: italic; }
+  .lectura .pie { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .lectura .leer { font: 600 14px system-ui, sans-serif; background: var(--cat); color: #fff; text-decoration: none; border-radius: 999px; padding: 8px 16px; }
+  ol.list .lectura a.leer:visited { color: #fff; }
   .empty { padding: 40px 0; text-align: center; color: var(--muted); }
   details.estado { margin-top: 28px; font-size: 13px; color: var(--muted); }
   details.estado summary { cursor: pointer; }
@@ -185,7 +194,7 @@ const guardar = (k, v) => { try { localStorage.setItem('kiosco4:' + k, JSON.stri
 const leer = (k, d) => { try { const v = localStorage.getItem('kiosco4:' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
 
 const S = {
-  cat: leer('cat', 'nacional'), sub: null, q: '', limite: 60, modo: leer('modo', 'tarjetas'),
+  cat: leer('cat', 'nacional'), sub: null, abierta: null, q: '', limite: 60, modo: leer('modo', 'tarjetas'),
   ocultos: new Set(leer('ocultos', [])),
   notas: {}, fuentes: [], generado: 0, cargando: false, error: '',
 };
@@ -280,10 +289,33 @@ function pintar() {
     lista.replaceChildren(el('li', { class: 'empty' }, S.cargando ? 'Cargando titulares…'
       : (S.notas[S.cat] || []).length ? 'No hay titulares con ese filtro.' : 'Todavía no hay noticias cargadas. Abajo está el detalle por fuente.'));
   } else {
-    lista.replaceChildren(...visibles.slice(0, S.limite).map(n => el('li', {},
-      el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', { class: 'sub' }, n.sub), el('span', {}, hace(n.ts))),
-      el('a', { href: n.link, target: '_blank', rel: 'noopener noreferrer' }, n.titulo),
-      n.desc ? el('p', { class: 'desc' }, n.desc) : '')));
+    lista.replaceChildren(...visibles.slice(0, S.limite).map(n => {
+      const abierta = S.abierta === n.link;
+      const titulo = el('a', { class: 'titular', href: n.link, 'aria-expanded': abierta }, n.titulo);
+      // Clic normal: abre o cierra la nota aquí mismo. Ctrl/Cmd + clic o clic central: va al medio.
+      titulo.addEventListener('click', e => {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.button) return;
+        e.preventDefault(); S.abierta = abierta ? null : n.link; pintar();
+      });
+      const li = el('li', { class: abierta ? 'abierta' : '' },
+        el('div', { class: 'info' }, el('span', { class: 'medio' }, n.medio), el('span', { class: 'sub' }, n.sub), el('span', {}, hace(n.ts))),
+        titulo);
+      if (!abierta) { if (n.desc) li.append(el('p', { class: 'desc' }, n.desc)); return li; }
+      const texto = n.res || n.desc;
+      const cuerpo = el('div', { class: 'lectura' });
+      if (n.img) {
+        const im = el('img', { src: n.img, alt: '', referrerpolicy: 'no-referrer' });
+        im.addEventListener('error', () => im.remove());
+        cuerpo.append(im);
+      }
+      cuerpo.append(
+        texto ? el('p', {}, texto) : el('p', { class: 'sin' }, 'Este medio no publica el texto de sus notas en un feed, solo el titular.'),
+        el('div', { class: 'pie' },
+          el('a', { class: 'leer', href: n.link, target: '_blank', rel: 'noopener noreferrer' }, 'Leer completa en ' + n.medio + ' →'),
+          el('button', { class: 'btn', onclick: () => { S.abierta = null; pintar(); } }, 'Cerrar')));
+      li.append(cuerpo);
+      return li;
+    }));
   }
   $('mas').hidden = visibles.length <= S.limite;
   document.body.classList.toggle('tarjetas', S.modo === 'tarjetas');
